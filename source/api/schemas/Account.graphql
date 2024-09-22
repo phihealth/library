@@ -1,0 +1,297 @@
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+type AccessRole {
+    createdAt: DateTimeISO!
+    createdByAccountId: String!
+    createdByProfileId: String!
+    expiresAt: DateTimeISO
+    id: String!
+    status: AccessRoleStatus!
+    type: String!
+    updatedAt: DateTimeISO!
+    updatedByAccountId: String
+    updatedByProfileId: String
+}
+
+"""
+The status of an access role for an account/profile
+"""
+enum AccessRoleStatus {
+    Active
+    Expired
+    Revoked
+}
+
+type Account {
+    accountEmails: [AccountEmail!]!
+    createdAt: DateTimeISO!
+    currentProfile: Profile
+    currentSession: AccountSession
+    defaultProfile: Profile
+    defaultProfileId: String
+    primaryAccountEmail: AccountEmail
+    roles: [AccessRole!]!
+}
+
+type AccountEmail {
+    createdAt: DateTimeISO!
+    emailAddress: String!
+    id: String!
+    isVerified: Boolean!
+    source: String!
+    type: AccountEmailType!
+    updatedAt: DateTimeISO!
+}
+
+type AccountEmailAddressesResult {
+    count: Float!
+    emailAddresses: [AccountEmail!]!
+}
+
+"""
+The type of an account email
+"""
+enum AccountEmailType {
+    Primary
+    Secondary
+}
+
+input AccountEmailVerificationCompleteInput {
+    code: String!
+    makePrimary: Boolean
+}
+
+input AccountEmailVerificationSendInput {
+    emailAddress: String!
+}
+
+input AccountEncryptionConfiguration {
+    publicKey: String!
+    transitKeyId: String!
+}
+
+input AccountPasswordCreateInput {
+    newPassword: String!
+}
+
+input AccountPasswordVerifyInput {
+    password: String!
+}
+
+input AccountProfileUpdateInput {
+    birthday: DateTimeISO
+    displayName: String
+    familyName: String
+    gender: String
+    givenName: String
+    middleName: String
+    phoneNumber: String
+    preferredName: String
+    username: String
+}
+
+input AccountRegistrationCompleteInput {
+    displayName: String
+    encryptionConfiguration: AccountEncryptionConfiguration
+    familyName: String
+    givenName: String
+    password: String
+    phoneNumber: String
+    username: String
+}
+
+input AccountRegistrationOrSignInCreateInput {
+    emailAddress: String!
+}
+
+type AccountSession {
+    createdAt: DateTimeISO!
+    currentProfileId: String!
+    id: String!
+    lastUsed: DateTimeISO
+    status: AccountSessionStatus!
+    statusChangedAt: DateTimeISO
+    updatedAt: DateTimeISO!
+}
+
+input AccountSessionDeleteInput {
+    sessionIds: [String!]!
+}
+
+"""
+The status of an account session
+"""
+enum AccountSessionStatus {
+    Active
+    Expired
+    Revoked
+}
+
+type AuthenticationChallenge {
+    challengeType: String!
+    status: AuthenticationChallengeStatus!
+}
+
+"""
+The status of an authentication challenge.
+"""
+enum AuthenticationChallengeStatus {
+    Failed
+    Open
+    Success
+}
+
+type AuthenticationEmailVerification {
+    authentication: AuthenticationSession!
+    verification: EmailVerification!
+}
+
+type AuthenticationOperationResult {
+    authentication: AuthenticationSession!
+    success: Boolean!
+}
+
+type AuthenticationRegistrationOrSignIn {
+    authentication: AuthenticationSession!
+    emailAddress: String!
+}
+
+type AuthenticationSession {
+    createdAt: DateTimeISO!
+    currentChallenge: AuthenticationChallenge
+    scopeType: String!
+    status: AuthenticationSessionStatus!
+    updatedAt: DateTimeISO!
+}
+
+"""
+The status of the authentication session.
+"""
+enum AuthenticationSessionStatus {
+    Authenticated
+    AuthenticationExpired
+    AuthenticationUsed
+    ChallengeExpired
+    ChallengeFailed
+    Challenged
+    canTransition
+    isChallengeFailure
+    isOpen
+    openStatuses
+}
+
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format.
+"""
+scalar DateTimeISO
+
+type EmailVerification {
+    emailAddress: String!
+    lastEmailSentAt: DateTimeISO
+    status: EmailVerificationStatus!
+}
+
+"""
+The verification status of an email address.
+"""
+enum EmailVerificationStatus {
+    Failed
+    Pending
+    Verified
+}
+
+input EmailVerificationVerifyInput {
+    code: String!
+}
+
+input GrantAccessRoleInput {
+    accountId: String
+    emailAddress: String
+    expiresAt: DateTimeISO
+    profileId: String
+    type: String!
+}
+
+type ImageObject {
+    type: MediaObjectType!
+    url: String!
+    variant: String
+}
+
+enum MediaObjectType {
+    File
+    Image
+    Video
+}
+
+type Mutation {
+    accountEmailDelete(accountEmailId: String!): OperationResult!
+    accountEmailMakePrimary(accountEmailId: String!): AccountEmail!
+    accountEmailVerificationComplete(input: AccountEmailVerificationCompleteInput!): AccountEmail!
+    accountEmailVerificationSend(input: AccountEmailVerificationSendInput!): EmailVerification!
+    accountMaintenanceSessionCreate: AuthenticationSession!
+    accountPasswordCreate(input: AccountPasswordCreateInput!): OperationResult!
+    accountPasswordVerify(input: AccountPasswordVerifyInput!): AuthenticationOperationResult!
+    accountProfileImageRemove: Profile!
+    accountProfileUpdate(input: AccountProfileUpdateInput!): Profile!
+    accountRegistrationComplete(input: AccountRegistrationCompleteInput!): AuthenticationOperationResult!
+    accountRegistrationOrSignInCreate(
+        input: AccountRegistrationOrSignInCreateInput!
+    ): AuthenticationRegistrationOrSignIn!
+    accountRoleGrant(input: GrantAccessRoleInput!): AccessRole!
+    accountRoleRevoke(roleId: String!): OperationResult!
+    accountSessionDelete(input: AccountSessionDeleteInput!): OperationResult!
+    accountSignInComplete: AuthenticationOperationResult!
+    accountSignOut: OperationResult!
+    emailVerificationSend: AuthenticationEmailVerification!
+    emailVerificationVerify(input: EmailVerificationVerifyInput!): AuthenticationEmailVerification!
+}
+
+type OperationResult {
+    success: Boolean!
+}
+
+type Profile {
+    birthday: DateTimeISO
+    createdAt: DateTimeISO!
+    displayName: String
+    familyName: String
+    gender: String
+    givenName: String
+    id: String!
+    imageUrls: [ImageObject!]
+    middleName: String
+    phoneNumber: String
+    preferredName: String
+    updatedAt: DateTimeISO!
+    username: String!
+}
+
+type PublicProfile {
+    createdAt: DateTimeISO
+    displayName: String
+    imageUrls: [ImageObject!]
+    username: String!
+}
+
+type Query {
+    accountCurrent: Account!
+    accountEmailAddresses: AccountEmailAddressesResult!
+    accountEmailVerification: EmailVerification!
+    accountProfileUsernameValidate(username: String!): UniqueFieldValidationResult!
+    accountRoles(statuses: [String!]): [AccessRole!]!
+    accountSessions: [AccountSession!]!
+    authenticationCurrent: AuthenticationSession
+    emailVerification: AuthenticationEmailVerification
+    profilePublic(username: String!): PublicProfile
+}
+
+enum UniqueFieldValidationResult {
+    Available
+    Forbidden
+    Invalid
+    Taken
+}

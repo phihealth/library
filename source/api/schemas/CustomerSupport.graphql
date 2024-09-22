@@ -1,0 +1,123 @@
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+type CustomerSupportTicket {
+    attachments: [MediaObject!]
+    comments: [CustomerSupportTicketComment!]!
+    createdAt: DateTimeISO!
+    description: String
+    id: String!
+    identifier: String!
+    status: CustomerSupportTicketStatus!
+    title: String!
+    userEmailAddress: String!
+}
+
+type CustomerSupportTicketComment {
+    attachments: [MediaObject!]
+    content: String!
+    contentType: RichContentFormat!
+    createdAt: DateTimeISO!
+    emailMessageId: String
+    id: String!
+    replyToCommentId: String
+    source: CustomerSupportTicketCommentSource!
+    visibility: CustomerSupportTicketCommentVisibility!
+}
+
+input CustomerSupportTicketCommentCreateInput {
+    content: String!
+    contentType: RichContentFormat
+    emailAddress: String
+    emailName: String
+    replyToCommentId: String!
+    ticketId: String!
+    visibility: CustomerSupportTicketCommentVisibility
+}
+
+enum CustomerSupportTicketCommentSource {
+    Agent
+    User
+}
+
+enum CustomerSupportTicketCommentVisibility {
+    Internal
+    Public
+}
+
+input CustomerSupportTicketCreateInput {
+    description: String
+    emailAddress: String!
+    initialComment: CustomerSupportTicketCommentCreateInput
+    title: String!
+}
+
+"""
+The status of a customer support ticket
+"""
+enum CustomerSupportTicketStatus {
+    Archived
+    Closed
+    Open
+}
+
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format.
+"""
+scalar DateTimeISO
+
+type MediaObject {
+    type: MediaObjectType!
+    url: String!
+    variant: String
+}
+
+enum MediaObjectType {
+    File
+    Image
+    Video
+}
+
+type Mutation {
+    customerSupportTicketCommentCreate(input: CustomerSupportTicketCommentCreateInput!): CustomerSupportTicketComment!
+    customerSupportTicketCommentCreateAdmin(
+        input: CustomerSupportTicketCommentCreateInput!
+    ): CustomerSupportTicketComment!
+    customerSupportTicketCreate(input: CustomerSupportTicketCreateInput!): CustomerSupportTicketComment!
+}
+
+type Pagination {
+    itemIndex: Int!
+    itemIndexForNextPage: Int
+    itemIndexForPreviousPage: Int
+    itemsPerPage: Int!
+    itemsTotal: Int!
+    page: Int!
+    pagesTotal: Int!
+}
+
+type PaginationCustomerSupportTicketResult {
+    items: [CustomerSupportTicket!]!
+    pagination: Pagination
+}
+
+input PaginationInput {
+    itemIndex: Int
+    itemsPerPage: Int!
+}
+
+type Query {
+    customerSupportTickets(pagination: PaginationInput): PaginationCustomerSupportTicketResult!
+    customerSupportTicketsAdmin(pagination: PaginationInput): PaginationCustomerSupportTicketResult!
+}
+
+"""
+The format of the string rich-content
+"""
+enum RichContentFormat {
+    Html
+    Markdown
+    PlainText
+}

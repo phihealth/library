@@ -1,0 +1,331 @@
+schema {
+    query: Query
+    mutation: Mutation
+}
+
+input ColumnFilter {
+    caseSensitive: Boolean
+    column: String!
+    operator: ColumnFilterConditionOperator!
+    value: JSON!
+}
+
+"""
+The operator of a field filter
+"""
+enum ColumnFilterConditionOperator {
+    Equal
+    GreaterThan
+    GreaterThanOrEqual
+    In
+    IsNotNull
+    IsNull
+    LessThan
+    LessThanOrEqual
+    Like
+    NotEqual
+    NotIn
+    NotLike
+}
+
+"""
+A date-time string at UTC, such as 2007-12-03T10:15:30Z, compliant with the `date-time` format outlined in section 5.6 of the RFC 3339 profile of the ISO 8601 standard for representation of dates and times using the Gregorian calendar.This scalar is serialized to a string in ISO 8601 format and parsed from a string in ISO 8601 format.
+"""
+scalar DateTimeISO
+
+type ImageObject {
+    type: MediaObjectType!
+    url: String!
+    variant: String
+}
+
+"""
+The `JSON` scalar type represents JSON values as specified by [ECMA-404](http://www.ecma-international.org/publications/files/ECMA-ST/ECMA-404.pdf).
+"""
+scalar JSON
+
+enum MediaObjectType {
+    File
+    Image
+    Video
+}
+
+type Mutation {
+    postCommentCreate(input: PostCommentCreateInput!): PostComment!
+    postCommentDelete(id: String!): Boolean!
+    postCreateAdmin(input: PostCreateInput!): Post!
+    postDelete(id: String!, note: String): String!
+    postDeleteAdmin(id: String!, note: String): String!
+    postPublish(id: String!): Post!
+    postPublishAdmin(id: String!): Post!
+    postReactionCreate(commentId: String, content: String!, postId: String): Boolean!
+    postReactionDelete(commentId: String, content: String!, postId: String): Boolean!
+    postReportCreate(input: PostReportInput!): PostReport!
+    postReportModerate(approval: Boolean!, id: String!, note: String): Post!
+    postTopicCreate(name: String!): PostTopic!
+    postTopicDelete(id: String!): Boolean!
+    postUnvote(commentId: String, postId: String, type: PostVoteType): Boolean!
+    postUpdate(id: String!, input: PostUpdateInput!): Post!
+    postUpdateAdmin(id: String!, input: PostUpdateInput!): Post!
+    postVote(commentId: String, postId: String, type: PostVoteType): Boolean!
+}
+
+input OrderBy {
+    direction: OrderByDirection
+    key: String!
+}
+
+"""
+The order direction of a query
+"""
+enum OrderByDirection {
+    Ascending
+    Descending
+}
+
+type PagedPostComments {
+    items: [PostComment!]!
+    pagination: Pagination
+}
+
+type PagedPostReactionProfile {
+    items: [PostReactionProfile!]!
+    pagination: Pagination
+}
+
+type PagedPostReports {
+    items: [PostReport!]!
+    pagination: Pagination
+}
+
+type PagedPostRevisions {
+    items: [PostRevision!]!
+    pagination: Pagination
+}
+
+type PagedPosts {
+    items: [Post!]!
+    pagination: Pagination
+}
+
+type Pagination {
+    itemIndex: Int!
+    itemIndexForNextPage: Int
+    itemIndexForPreviousPage: Int
+    itemsPerPage: Int!
+    itemsTotal: Int!
+    page: Int!
+    pagesTotal: Int!
+}
+
+input PaginationInput {
+    itemIndex: Int
+    itemsPerPage: Int!
+}
+
+input PaginationInputWithFilters {
+    filters: [ColumnFilter!]
+    itemIndex: Int
+    itemsPerPage: Int!
+}
+
+type Post {
+    commentsPaged: PagedPostComments
+    content: String
+    contentType: RichContentFormat!
+    createdAt: DateTimeISO!
+    createdByAccountId: String!
+    createdByProfile: PublicProfile
+    createdByProfileId: String!
+    description: String
+    downvoteCount: Int!
+    id: String!
+    identifier: String!
+    latestRevisionId: String
+    metadata: JSON
+    note: String
+    publishedAt: DateTimeISO
+    reactions: [PostReaction!]
+    reportStatus: PostReportStatus
+    reportedCount: Int!
+    revisionsPaged(input: PaginationInput!): PagedPostRevisions
+    settings: JSON
+    slug: String!
+    status: PostStatus!
+    title: String!
+    topic: PostTopic
+    topicId: String
+    type: String!
+    updatedAt: DateTimeISO!
+    updatedByAccountId: String
+    updatedByProfileId: String
+    upvoteCount: Int!
+    voteType: PostVoteType
+}
+
+type PostComment {
+    content: String!
+    contentType: RichContentFormat!
+    createdAt: DateTimeISO!
+    createdByAccountId: String!
+    createdByProfile: PublicProfile
+    createdByProfileId: String!
+    deleted: Boolean!
+    downvoteCount: Int!
+    id: String!
+    postId: String!
+    reactions: [PostReaction!]
+    replyToCommentId: String
+    reportStatus: PostReportStatus
+    reportedCount: Int!
+    threadId: String
+    updatedAt: DateTimeISO!
+    updatedByAccountId: String
+    updatedByProfileId: String
+    upvoteCount: Int!
+    voteType: PostVoteType
+}
+
+input PostCommentCreateInput {
+    content: String!
+    contentType: RichContentFormat
+    postId: String!
+    replyToCommentId: String
+}
+
+input PostCreateInput {
+    allowComment: Boolean
+    allowDownvote: Boolean
+    allowReaction: Boolean
+    allowVote: Boolean
+    content: String
+    description: String
+    metadata: JSON
+    slug: String!
+    status: PostStatus
+    title: String!
+    topicId: String
+    type: String!
+}
+
+type PostReaction {
+    content: String!
+    count: Int!
+    reacted: Boolean!
+}
+
+type PostReactionProfile {
+    displayName: String
+    profileId: String!
+    username: String!
+}
+
+type PostReport {
+    commentId: String
+    createdAt: DateTimeISO!
+    createdByAccountId: String!
+    createdByProfileId: String!
+    id: String!
+    note: String
+    postId: String
+    reason: String!
+}
+
+input PostReportInput {
+    commentId: String
+    note: String
+    postId: String
+    reason: String!
+}
+
+enum PostReportStatus {
+    Approved
+    HoldForReview
+    Rejected
+}
+
+type PostRevision {
+    content: String
+    contentType: RichContentFormat
+    createdAt: DateTimeISO!
+    createdByAccountId: String!
+    createdByProfileId: String!
+    description: String
+    id: String!
+    metadata: JSON
+    note: String
+    postId: String!
+    settings: JSON
+    slug: String
+    status: PostStatus
+    title: String
+    topicId: String
+    type: String
+}
+
+enum PostStatus {
+    Deleted
+    Draft
+    Published
+}
+
+type PostTopic {
+    createdAt: DateTimeISO!
+    id: String!
+    name: String!
+}
+
+input PostUpdateInput {
+    allowComment: Boolean
+    allowDownvote: Boolean
+    allowReaction: Boolean
+    allowVote: Boolean
+    content: String
+    contentType: RichContentFormat
+    description: String
+    metadata: JSON
+    publishedAt: DateTimeISO
+    slug: String
+    title: String
+    topicId: String
+    type: String
+}
+
+enum PostVoteType {
+    Downvote
+    Upvote
+}
+
+type PublicProfile {
+    createdAt: DateTimeISO
+    displayName: String
+    imageUrls: [ImageObject!]
+    username: String!
+}
+
+type Query {
+    post(id: String, identifier: String): Post!
+    postAdmin(id: String, identifier: String): Post!
+    postComments(input: PaginationInput, orderBy: OrderBy, postId: String!, threadId: String): PagedPostComments!
+    postReactionProfiles(
+        commentId: String
+        content: String!
+        pagination: PaginationInput
+        postId: String
+    ): PagedPostReactionProfile!
+    postReports(commentId: String, pagination: PaginationInput, postId: String): PagedPostReports!
+    postTopics: [PostTopic!]!
+    posts(input: PaginationInputWithFilters, orderBy: OrderBy): PagedPosts!
+    postsAdmin(input: PaginationInputWithFilters, orderBy: OrderBy): PagedPosts!
+    postsByTopic(orderBy: OrderBy, pagination: PaginationInput, topicName: String!): PagedPosts!
+    postsMine(input: PaginationInputWithFilters, orderBy: OrderBy): PagedPosts!
+}
+
+"""
+The format of the string rich-content
+"""
+enum RichContentFormat {
+    Html
+    Markdown
+    PlainText
+}

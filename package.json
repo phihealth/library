@@ -1,0 +1,127 @@
+{
+    "name": "structure-next-template",
+    "version": "1.0.0",
+    "private": true,
+    "engines": {
+        "node": "20"
+    },
+    "scripts": {
+        "dev": "next dev --port 7878",
+        "build": "next build",
+        "start": "next start",
+        "lint": "next lint",
+        "pages:build": "npx @cloudflare/next-on-pages",
+        "preview": "npm run pages:build && wrangler pages dev .vercel/output/static --port 7879 --compatibility-date=2024-03-22 --compatibility-flags=\"nodejs_compat\"",
+        "deploy": "npm run pages:build && wrangler pages deploy .vercel/output/static --compatibility-date=2024-03-22 --compatibility-flags=\"nodejs_compat\"",
+        "build-cf-types": "wrangler types --env-interface CloudflareEnv env.d.ts",
+        "api": "libraries/structure/scripts/api.sh",
+        "graphql:generate": "graphql-codegen --config libraries/structure/source/api/GraphQlCodeGeneratorConfiguration.ts"
+    },
+    "dependencies": {
+        "@apollo/client": "^3.9.9",
+        "@graphql-codegen/typescript-operation-metadata": "https://github.com/kamsheffield/graphql-code-generator-community/releases/download/typescript-operation-metadata-v1.0.0/graphql-codegen-typescript-operation-metadata-1.0.0.tgz",
+        "@hookform/resolvers": "^3.3.4",
+        "@lottiefiles/react-lottie-player": "^3.5.4",
+        "@radix-ui/react-accordion": "^1.1.2",
+        "@radix-ui/react-context-menu": "^2.1.5",
+        "@radix-ui/react-dialog": "^1.0.5",
+        "@radix-ui/react-dropdown-menu": "^2.1.1",
+        "@radix-ui/react-label": "^2.1.0",
+        "@radix-ui/react-popover": "^1.0.7",
+        "@radix-ui/react-scroll-area": "^1.0.5",
+        "@radix-ui/react-select": "^2.0.0",
+        "@radix-ui/react-slot": "^1.0.2",
+        "@radix-ui/react-tooltip": "^1.0.7",
+        "@radix-ui/react-visually-hidden": "^1.1.0",
+        "@react-spring/web": "^9.7.3",
+        "@use-gesture/react": "^10.3.1",
+        "clsx": "^2.1.0",
+        "jotai": "^2.8.0",
+        "lenis": "^1.1.1",
+        "next": "^14.2.3",
+        "nuqs": "^1.17.1",
+        "react": "^18.3.1",
+        "react-colorful": "^5.6.1",
+        "react-cookie": "^7.1.0",
+        "react-day-picker": "^8.10.0",
+        "react-dom": "^18.3.1",
+        "react-easy-crop": "^5.0.6",
+        "react-hook-form": "^7.51.3",
+        "react-markdown": "^9.0.1",
+        "react-syntax-highlighter": "^15.5.0",
+        "react-use-measure": "^2.1.1",
+        "recharts": "^2.12.3",
+        "rehype-highlight": "^7.0.0",
+        "remark-custom-header-id": "^1.0.0",
+        "tailwind-merge": "^2.2.2",
+        "tailwindcss-animate": "^1.0.7",
+        "valibot": "^0.36.0",
+        "vaul": "^0.9.0",
+        "zustand": "^4.5.2"
+    },
+    "devDependencies": {
+        "@cloudflare/next-on-pages": "^1.11.0",
+        "@cloudflare/workers-types": "^4.20240320.1",
+        "@eslint/js": "^9.7.0",
+        "@graphql-codegen/cli": "^5.0.2",
+        "@graphql-codegen/client-preset": "^4.2.4",
+        "@svgr/webpack": "^8.1.0",
+        "@types/eslint__js": "^8.42.3",
+        "@types/node": "^20",
+        "@types/react": "^18",
+        "@types/react-dom": "^18",
+        "@types/react-syntax-highlighter": "^15.5.13",
+        "@typescript-eslint/eslint-plugin": "^7.17.0",
+        "@typescript-eslint/parser": "^7.17.0",
+        "autoprefixer": "^10.0.1",
+        "eslint": "^8.57.0",
+        "eslint-config-next": "14.1.4",
+        "eslint-config-prettier": "^9.1.0",
+        "eslint-plugin-next-on-pages": "^1.11.0",
+        "eslint-plugin-react": "^7.35.0",
+        "eslint-plugin-react-compiler": "^0.0.0-experimental-a97cca1-20240529",
+        "postcss": "^8",
+        "prettier": "npm:@system-inc/prettier@3.2.1",
+        "prettier-plugin-tailwindcss": "^0.5.7",
+        "tailwindcss": "^3.4.3",
+        "typescript": "^5.5.4",
+        "typescript-eslint": "^7.17.0",
+        "vercel": "^33.6.1",
+        "wrangler": "^3.50.0"
+    },
+    "overrides": {
+        "prettier-plugin-tailwindcss": {
+            "prettier": "npm:@system-inc/prettier@3.2.1"
+        }
+    },
+    "prettier": {
+        "plugins": [
+            "prettier-plugin-tailwindcss"
+        ],
+        "tabWidth": 4,
+        "useTabs": false,
+        "semi": true,
+        "singleQuote": true,
+        "spaceBeforeFunctionParen": false,
+        "printWidth": 120
+    },
+    "postcss": {
+        "plugins": [
+            "tailwindcss",
+            "autoprefixer"
+        ]
+    },
+    "graphql": {
+        "projects": {
+            "app": {
+                "schema": [
+                    "./source/api/schemas/**/*.graphql"
+                ],
+                "documents": [
+                    "./source/modules/**/api/**/*.graphql",
+                    "./libraries/structure/source/modules/**/api/**/*.graphql"
+                ]
+            }
+        }
+    }
+}

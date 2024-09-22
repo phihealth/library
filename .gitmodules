@@ -1,0 +1,3 @@
+[submodule "libraries/structure"]
+	path = libraries/structure
+	url = git@github.com:system-inc/structure-next.git
