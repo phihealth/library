@@ -19,7 +19,7 @@ export const NextConfiguration = {
         remotePatterns: [
             {
                 protocol: 'https',
-                hostname: 'assets.system.inc',
+                hostname: 'assets.system.inc', // TODO: Update to your assets hostname
                 port: '',
                 pathname: '/**',
             },

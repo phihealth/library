@@ -11,11 +11,11 @@ Before you begin, ensure you have the following installed on your local machine:
 
 ## Setting Up Your Development Environment
 
-1. **Fork the repository**
+1. **Fork the Repository**
 
-    First, fork this repository using GitHub.
+    First, fork the `structure-next-template` repository using GitHub.
 
-2. **Clone the repository to your local machine using git**
+2. **Clone the Repository to Your Local Machine Using `git`**
 
     ```bash
     git clone YOUR_FORK
@@ -31,7 +31,7 @@ Before you begin, ensure you have the following installed on your local machine:
     cd ../../
     ```
 
-3. **Install dependencies**
+3. **Install Dependencies with `NPM`**
 
     Navigate into the project’s directory and install the necessary dependencies.
 
@@ -39,9 +39,35 @@ Before you begin, ensure you have the following installed on your local machine:
     npm i
     ```
 
-4. **Update Your hosts File**
+4. **Update ProjectSettings.ts**
 
-    Because we are using `HTTP Only` cookies, we need to use the `HTTPS` protocol when developing. This allows the cookies from `*.PROJECT_DOMAIN.TLD` to be sent in the headers of requests from the web browser. You'll need to update your development machine's hosts file and create a record for `localhost.PROJECT_DOMAIN`.
+    `ProjectSettings.ts` is used to configure all of your project settings. Update the file with your project-specific information.
+
+5. **Update the Assets Hostname in `next.config.mjs`**
+
+    The project assumes you will be using a service like Cloudflare R2 to store images. Next.JS needs to be configured to not to optimize images from that host.
+
+6. **(If Using Base API) Update Your package.json Scripts and System hosts File**
+
+    **Update Your package.json Scripts**
+
+    By default, the development server will run on port 7878 over regular `HTTP`, not `HTTPs`. If you are using the Base API, it will require `HTTP Only` cookies in order for the account system to work. These cookies are secure and are not accessible via JavaScript. These cookies will only be sent by web browsers with `HTTPS` connections. So, `HTTPS` needs to be enabled in your development environment.
+
+    Replace the dev script in your package.json:
+
+    ```
+    // Default
+    "dev": "next dev --port 7878",
+
+    // Update to:
+    "dev": "next dev --experimental-https --port 7878 --hostname localhost.PROJECT_DOMAIN.TLD",
+    ```
+
+    Where `PROJECT_DOMAIN.TLD` is the domain where you will host your project.
+
+    **Update Your System hosts File**
+
+    In order to access your `HTTPS` web server hosted on `localhost.PROJECT_DOMAIN.TLD`, you will need to update your system hosts file:
 
     ```bash
     sudo nano /etc/hosts
@@ -53,7 +79,7 @@ Before you begin, ensure you have the following installed on your local machine:
 
     Now `localhost.PROJECT_DOMAIN.TLD` will point to your local machine.
 
-5. **Start the development server**
+7. **Start the Development Server**
 
     Start the development server using:
 

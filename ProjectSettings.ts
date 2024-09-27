@@ -3,15 +3,15 @@ import { StructureSettingsInterface } from './libraries/structure/StructureSetti
 
 // ProjectSettings
 export const ProjectSettings: StructureSettingsInterface = {
-    identifier: 'system',
-    title: 'Structure',
-    ownerDisplayName: 'System, Inc.',
-    tagline: 'React and Next.js Implementation for Base',
-    description: 'A React and Next.js implementation for Base.',
-    url: 'https://www.system.inc/',
+    identifier: 'yourProject',
+    title: 'Your Title',
+    ownerDisplayName: 'Your Company, Inc.',
+    tagline: 'Your tagline',
+    description: 'Your description of the project.',
+    url: 'https://www.PROJECT_DOMAIN.TLD/',
     apis: {
         base: {
-            url: 'https://api.system.inc/graphql', // This needs to be an absolute url, as relative urls cannot be used in SSR
+            url: 'https://api.PROJECT_DOMAIN.TLD/graphql', // This needs to be an absolute url, as relative urls cannot be used in SSR
         },
     },
     modules: {
@@ -25,7 +25,7 @@ export const ProjectSettings: StructureSettingsInterface = {
         defaultClassName: 'light',
     },
     assets: {
-        url: 'https://assets.system.inc/',
+        url: 'https://assets.PROJECT_DOMAIN.TLD/',
         favicon: {
             light: {
                 location: '/images/icons/favicons/favicon-light.png',
@@ -50,25 +50,13 @@ export const ProjectSettings: StructureSettingsInterface = {
             url: 'https://github.com/system-inc/structure-next/',
         },
         project: {
-            url: 'https://github.com/system-inc/structure-next-template/',
-        },
-    },
-    services: {
-        google: {
-            analytics: {
-                id: '',
-            },
+            url: 'https://github.com/YOUR_PROJECT_REPOSITORY',
         },
     },
     platforms: {
         x: {
             title: 'X',
-            url: 'https://x.com/systeminc',
-            type: 'social',
-        },
-        instagram: {
-            title: 'Instagram',
-            url: 'https://www.instagram.com/systeminc',
+            url: 'https://x.com/YOUR_USERNAME',
             type: 'social',
         },
     },
