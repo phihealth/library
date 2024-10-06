@@ -1,10 +1,10 @@
 export const runtime = 'edge'; // Enable server-side rendering
 
 // Dependencies - Main Components
-import { LibraryPage } from './LibraryPage';
+import { LibraryPage } from '@project/source/pages/LibraryPage';
 
 // Dependencies - API
-import { libraryApi } from '@project/app/[...api]/LibraryApi';
+import { libraryApi } from '@project/source/api/LibraryApi';
 
 // Interface - Page
 interface PageInterface {

@@ -16,6 +16,7 @@ export function HomePage() {
             <div className="flex flex-col space-y-4">
                 <Button href={'/library'}>Enter the Library</Button>
                 <Button href={'/library/librarians'}>Librarians</Button>
+                <Button href={'/library/post'}>Sample Post</Button>
             </div>
         </div>
     );

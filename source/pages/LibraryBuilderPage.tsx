@@ -42,24 +42,6 @@ export function LibraryBuilderPage() {
                     <p className="neutral mb-4 text-xs uppercase">Commands</p>
 
                     <div className="flex flex-col space-y-2">
-                        {/* Drop Tables */}
-                        {/* <Button
-                            onClick={function () {
-                                api('dropTables');
-                            }}
-                        >
-                            Drop Tables
-                        </Button> */}
-
-                        {/* Create Tables */}
-                        {/* <Button
-                            onClick={function () {
-                                api('createTables');
-                            }}
-                        >
-                            Create Tables
-                        </Button> */}
-
                         {/* Show Tables */}
                         <Button
                             onClick={function () {

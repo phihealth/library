@@ -3,29 +3,29 @@ import { StructureSettingsInterface } from './libraries/structure/StructureSetti
 
 // ProjectSettings
 export const ProjectSettings: StructureSettingsInterface = {
-    identifier: 'yourProject',
-    title: 'Your Title',
-    ownerDisplayName: 'Your Company, Inc.',
-    tagline: 'Your tagline',
-    description: 'Your description of the project.',
-    url: 'https://www.PROJECT_DOMAIN.TLD/',
+    identifier: 'library',
+    title: 'Library',
+    ownerDisplayName: 'Phi, Inc.',
+    tagline: 'An evolving library of all health information.',
+    description: 'An evolving library of all health information.',
+    url: 'https://www.phi.health/',
     apis: {
         base: {
-            url: 'https://api.PROJECT_DOMAIN.TLD/graphql', // This needs to be an absolute url, as relative urls cannot be used in SSR
+            url: 'https://api.phi.health/graphql', // This needs to be an absolute url, as relative urls cannot be used in SSR
         },
     },
     modules: {
-        accounts: true,
-        engagement: true,
-        support: true,
-        posts: true,
-        commerce: true,
+        accounts: false,
+        engagement: false,
+        support: false,
+        posts: false,
+        commerce: false,
     },
     theme: {
         defaultClassName: 'light',
     },
     assets: {
-        url: 'https://assets.PROJECT_DOMAIN.TLD/',
+        url: 'https://assets.phi.health/',
         favicon: {
             light: {
                 location: '/images/icons/favicons/favicon-light.png',

@@ -5,7 +5,7 @@ import React from 'react';
 import Link from 'next/link';
 
 // Dependencies - Main Components
-import { LibraryNodeInterface } from '@project/app/[...api]/route';
+import { LibraryNodeInterface } from '@project/source/api/LibraryApiInterfaces';
 import { Pagination } from '@structure/source/common/navigation/Pagination';
 import { InputText } from '@structure/source/common/forms/InputText';
 

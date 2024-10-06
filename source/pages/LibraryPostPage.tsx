@@ -1,24 +1,21 @@
-export const runtime = 'edge'; // Enable server-side rendering
+'use client'; // This component uses client-only features
+
+// Dependencies - React and Next.js
+import React from 'react';
+import Link from 'next/link';
 
 // Dependencies - Main Components
 import { Markdown } from '@structure/source/common/markdown/Markdown';
-
 import { ThemeToggle } from '@structure/source/theme/ThemeToggle';
 
+// Dependencies - Assets
 import PhiIcon from '@structure/assets/icons/platforms/PhiIcon.svg';
 import OpenAiIcon from '@structure/assets/icons/platforms/OpenAiIcon.svg';
 
-// Next.js Metadata
-export async function generateMetadata() {
-    return {
-        title: 'Lutein Supports Eye Health',
-    };
-}
-
-// Implement this font: https://fonts.google.com/specimen/Libre+Caslon+Text
-// CSS drop cap: https://www.digitalocean.com/community/tutorials/css-drop-caps
-
-export default function Page() {
+// Component - LibraryPostPage
+export interface LibraryPostPageInterface {}
+export function LibraryPostPage(properties: LibraryPostPageInterface) {
+    // Render the component
     return (
         <div className="container max-w-[680px] pb-32 pt-16">
             <ThemeToggle className="absolute right-4 top-4" />
@@ -81,3 +78,6 @@ Lutein is a vital nutrient for maintaining healthy eyes, protecting against age-
         </div>
     );
 }
+
+// Export - Default
+export default LibraryPostPage;

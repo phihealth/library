@@ -1,5 +1,8 @@
-// Dependencies
-import { getLibraryNodesResponseInterface, getLibraryNodeBySlugResponseInterface } from '@project/app/[...api]/route';
+// Dependencies - API
+import {
+    getLibraryNodesResponseInterface,
+    getLibraryNodeBySlugResponseInterface,
+} from '@project/source/api/LibraryApiInterfaces';
 
 // Class - LibraryApi
 export class LibraryApi {

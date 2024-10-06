@@ -1,16 +1,16 @@
 export const runtime = 'edge'; // Enable server-side rendering
 
 // Dependencies - Main Components
-import { HomePage } from '@project/source/pages/HomePage';
+import { LibraryPostPage } from '@project/source/pages/LibraryPostPage';
 
 // Next.js Metadata
 export async function generateMetadata() {
     return {
-        title: 'Phi',
+        title: 'Lutein Supports Eye Health',
     };
 }
 
 // Export - Default
-export default function Page() {
-    return <HomePage />;
+export default async function Page() {
+    return <LibraryPostPage />;
 }
