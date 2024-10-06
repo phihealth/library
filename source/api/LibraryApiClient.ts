@@ -4,8 +4,8 @@ import {
     getLibraryNodeBySlugResponseInterface,
 } from '@project/source/api/LibraryApiInterfaces';
 
-// Class - LibraryApi
-export class LibraryApi {
+// Class - LibraryApiClient
+export class LibraryApiClient {
     // Function to fetch the provided API path
     async fetch(apiPath: string) {
         // Invoke the HTTP(S) request
@@ -47,7 +47,7 @@ export class LibraryApi {
 }
 
 // Instance
-export const libraryApi = new LibraryApi();
+export const libraryApiClient = new LibraryApiClient();
 
 // Export - Default
-export default LibraryApi;
+export default LibraryApiClient;

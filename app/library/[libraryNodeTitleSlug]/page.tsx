@@ -4,7 +4,7 @@ export const runtime = 'edge'; // Enable server-side rendering
 import { LibraryNodePage } from '@project/source/pages/LibraryNodePage';
 
 // Dependencies - API
-import { libraryApi } from '@project/source/api/LibraryApi';
+import { libraryApiClient } from '@project/source/api/LibraryApiClient';
 
 // Interface - Page
 interface PageInterface {
@@ -15,7 +15,9 @@ interface PageInterface {
 
 // Function to get server-side properties
 async function getServerSideProperties(properties: PageInterface) {
-    const getLibraryNodeBySlugResponse = await libraryApi.getLibraryNodeBySlug(properties.params.libraryNodeTitleSlug);
+    const getLibraryNodeBySlugResponse = await libraryApiClient.getLibraryNodeBySlug(
+        properties.params.libraryNodeTitleSlug,
+    );
     // console.log('getLibraryNodeBySlugResponse', getLibraryNodeBySlugResponse);
 
     return getLibraryNodeBySlugResponse;
