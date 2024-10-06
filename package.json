@@ -1,5 +1,5 @@
 {
-    "name": "structure-next-template",
+    "name": "phi-library",
     "version": "1.0.0",
     "private": true,
     "engines": {
@@ -53,8 +53,10 @@
         "recharts": "^2.12.3",
         "rehype-highlight": "^7.0.0",
         "remark-custom-header-id": "^1.0.0",
+        "sqlite3": "^5.1.7",
         "tailwind-merge": "^2.2.2",
         "tailwindcss-animate": "^1.0.7",
+        "uuid": "^10.0.0",
         "valibot": "^0.36.0",
         "vaul": "^0.9.0",
         "zustand": "^4.5.2"
@@ -71,6 +73,8 @@
         "@types/react": "^18",
         "@types/react-dom": "^18",
         "@types/react-syntax-highlighter": "^15.5.13",
+        "@types/sqlite3": "^3.1.11",
+        "@types/uuid": "^10.0.0",
         "@typescript-eslint/eslint-plugin": "^7.17.0",
         "@typescript-eslint/parser": "^7.17.0",
         "autoprefixer": "^10.0.1",

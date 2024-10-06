@@ -1,16 +1,16 @@
 export const runtime = 'edge'; // Enable server-side rendering
 
 // Dependencies - Main Components
-import { HomePage } from './HomePage';
+import { LibraryBuilderPage } from './LibraryBuilderPage';
 
 // Next.js Metadata
 export async function generateMetadata() {
     return {
-        title: 'Phi',
+        title: 'Library Builder',
     };
 }
 
 // Export - Default
 export default function Page() {
-    return <HomePage />;
+    return <LibraryBuilderPage />;
 }
