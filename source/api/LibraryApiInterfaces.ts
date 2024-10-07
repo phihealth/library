@@ -205,4 +205,10 @@ export interface LibraryApiInterface {
             };
         };
     };
+    improveLibrary: {
+        parameters: undefined;
+        response: {
+            data: string;
+        };
+    };
 }

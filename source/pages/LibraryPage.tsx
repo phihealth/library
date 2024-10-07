@@ -21,10 +21,12 @@ export function LibraryPage(properties: LibraryPageInterface) {
     // Render the component
     return (
         <div className="container pb-32 pt-8">
-            <h1 className="mb-8 text-3xl font-medium">Phi Library</h1>
+            <Link href="/">
+                <h1 className="inline text-3xl font-medium">Phi Library</h1>
+            </Link>
 
             {/* Search */}
-            <div className="mb-6">
+            <div className="mb-6 mt-8 ">
                 <InputText
                     id="searchTerm"
                     variant="search"

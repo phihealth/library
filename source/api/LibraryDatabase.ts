@@ -182,17 +182,17 @@ export class LibraryDatabase {
             throw new Error('Title is null');
         }
 
-        // Get the LibraryNode
-        let libraryNode = this.getLibraryNodeByTitle(title);
+        // Get the LibraryNode using slug, as the title is case insensitive
+        let libraryNode = this.getLibraryNodeBySlug(slug(title));
 
         // If the LibraryNode does not exist
         if(!libraryNode) {
             // Create the LibraryNode
-            console.log('Creating node:', title);
+            // console.log('Creating node:', title);
             this.createLibraryNode(title);
 
             // Get the LibraryNode
-            libraryNode = this.getLibraryNodeByTitle(title);
+            libraryNode = this.getLibraryNodeBySlug(slug(title));
         }
 
         return libraryNode;

@@ -4,6 +4,7 @@ import type { NextRequest } from 'next/server';
 // Dependencies - API
 import { LibraryApiInterface } from '@project/source/api/LibraryApiInterfaces';
 import { LibraryDatabase } from '@project/source/api/LibraryDatabase';
+import { LibraryAgent } from '@project/source/api/LibraryAgent';
 
 // Class - LibraryApiServer
 export class LibraryApiServer {
@@ -54,7 +55,7 @@ export class LibraryApiServer {
             }
             // improveLibrary
             else if(request.nextUrl.pathname === '/api/improveLibrary') {
-                // responseJson.data = libraryDatabase.improveLibrary();
+                response.data = await LibraryAgent.improveLibrary(libraryDatabase);
             }
         }
         catch(error) {

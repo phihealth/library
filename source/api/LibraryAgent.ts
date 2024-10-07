@@ -1,21 +1,23 @@
+// Dependencies - API
+import { LibraryDatabase } from '@project/source/api/LibraryDatabase';
+
 // Dependencies - Utilities
 import { slug } from '@structure/source/utilities/String';
 
-// Function to improve the library
-async function improveLibrary() {
-    const sqliteDatabase = getDatabaseConnection();
+// Class - LibraryAgent
+export class LibraryAgent {
+    static async improveLibrary(database: LibraryDatabase) {
+        // Get a random node and its relationships
+        const randomLibraryNode = database.getRandomLibraryNode();
 
-    // Get a random node and its relationships
-    const node = await getRandomLibraryNode();
+        console.log('\n\n\n');
+        console.log('Current node: ', randomLibraryNode.title);
 
-    console.log('\n\n\n');
-    console.log('Current node: ', node.title);
-
-    const prompt = `May we ask for your help in maintaining and expanding our health concepts graph?
+        const prompt = `May we ask for your help in maintaining and expanding our health concepts graph?
 
 ## Current Node
 
-${JSON.stringify(node, null, 4)}
+${JSON.stringify(randomLibraryNode, null, 4)}
 
 ## Available Tools
 
@@ -43,7 +45,7 @@ Choose a confidence level that reflects your certainty in the relationship.
 -   Focus on any concepts related to physical and mental health and the relationships between them.
 `;
 
-    /*
+        /*
 #### nodeCreate(title: string)
 
 Creates a new node with the specified title.
@@ -58,9 +60,8 @@ Adds new synonyms to an existing node. Does not delete existing synonyms.
 
 */
 
-    // console.log('prompt', prompt);
+        // console.log('prompt', prompt);
 
-    try {
         const apiKey = process.env.OPENAI_API_KEY;
 
         const response = await fetch(
@@ -99,9 +100,19 @@ Adds new synonyms to an existing node. Does not delete existing synonyms.
         // console.log(generatedText);
         // console.log('---------------');
 
-        const commands = generatedText.split('\n').map(function (command: string) {
-            return command.trim();
-        });
+        const commands = generatedText.split('\n').reduce(function (accumulator: string[], command: string) {
+            let commandString = command.trim();
+
+            // Only add commands that end with a closing parenthesis
+            if(commandString && commandString.endsWith(')')) {
+                accumulator.push(commandString);
+            }
+            else {
+                console.log('Skipping command:', commandString);
+            }
+
+            return accumulator;
+        }, []);
 
         // Execute the commands
         try {
@@ -109,29 +120,52 @@ Adds new synonyms to an existing node. Does not delete existing synonyms.
                 // console.log('command', command);
 
                 // Parse the command
-                const commandParts = command.split('(');
-                const functionName = commandParts[0];
-                const functionArguments = commandParts[1]
-                    .replace(')', '')
-                    .split(',')
-                    .map(function (argument: string) {
-                        let argumentString = argument.trim();
 
-                        // Remove quotes
-                        argumentString = argumentString.replace(/^"|"$/g, '');
+                // Split the command at the first opening parenthesis
+                // Do not use split('(') because the function arguments may contain parentheses
+                const firstParenthesisIndex = command.indexOf('(');
+                const commandParts = [
+                    command.substring(0, firstParenthesisIndex),
+                    command.substring(firstParenthesisIndex + 1),
+                ];
 
-                        // Remove single quotes
-                        argumentString = argumentString.replace(/^'|'$/g, '');
+                // Function name is the first part
+                const functionName = commandParts[0].trim();
 
-                        if(argumentString.startsWith('sourceNodeTitle: "')) {
-                            argumentString = argumentString.replace('sourceNodeTitle: "', '');
-                        }
-                        if(argumentString.startsWith('targetNodeTitle: "')) {
-                            argumentString = argumentString.replace('targetNodeTitle: "', '');
-                        }
+                // Function arguments are the second part
+                let functionArgumentsString = commandParts[1];
+                functionArgumentsString = functionArgumentsString.trim();
+                functionArgumentsString = functionArgumentsString.substring(0, functionArgumentsString.length - 1);
 
-                        return argumentString;
-                    });
+                const functionArguments = functionArgumentsString.split(',').map(function (argument: string) {
+                    let argumentString = argument.trim();
+
+                    // Remove quotes
+                    argumentString = argumentString.replace(/^"|"$/g, '');
+
+                    // Remove single quotes
+                    argumentString = argumentString.replace(/^'|'$/g, '');
+
+                    if(argumentString.startsWith("'")) {
+                        argumentString = argumentString.replace("'", '');
+                    }
+                    if(argumentString.startsWith('sourceNodeTitle: "')) {
+                        argumentString = argumentString.replace('sourceNodeTitle: "', '');
+                    }
+                    if(argumentString.startsWith('targetNodeTitle: "')) {
+                        argumentString = argumentString.replace('targetNodeTitle: "', '');
+                    }
+                    if(argumentString.startsWith('relationshipType: "')) {
+                        argumentString = argumentString.replace('relationshipType: "', '');
+                    }
+                    if(argumentString.startsWith('confidence: "')) {
+                        argumentString = argumentString.replace('confidence: "', '');
+                    }
+
+                    argumentString = argumentString.trim();
+
+                    return argumentString;
+                });
                 // console.log('functionName', functionName);
                 // console.log('functionArguments', functionArguments);
 
@@ -147,12 +181,31 @@ Adds new synonyms to an existing node. Does not delete existing synonyms.
                     // console.log('targetNodeTitle', targetNodeTitle);
                     // console.log('confidence', confidence);
 
+                    if(
+                        !sourceNodeTitle ||
+                        !relationshipType ||
+                        !targetNodeTitle ||
+                        !confidence ||
+                        sourceNodeTitle.startsWith('(') ||
+                        targetNodeTitle.startsWith('(')
+                    ) {
+                        console.error('Invalid arguments for nodeRelationshipCreate ---');
+                        console.log('command ---');
+                        console.log(command);
+                        console.log('functionArguments ---');
+                        console.log(functionArguments);
+                        console.log('------------------------');
+                        continue;
+                    }
+
                     // Get or create the source node
-                    const sourceNode = await getOrCreateLibraryNodeByTitle(sqliteDatabase, sourceNodeTitle);
+                    // console.log('sourceNodeTitle', sourceNodeTitle);
+                    const sourceNode = database.getOrCreateLibraryNodeByTitle(sourceNodeTitle);
                     // console.log('sourceNode', sourceNode);
 
                     // Get or create the target node
-                    const targetNode = await getOrCreateLibraryNodeByTitle(sqliteDatabase, targetNodeTitle);
+                    // console.log('targetNodeTitle', targetNodeTitle);
+                    const targetNode = database.getOrCreateLibraryNodeByTitle(targetNodeTitle);
                     // console.log('targetNode', targetNode);
 
                     // Get or create the relationship type
@@ -163,15 +216,16 @@ Adds new synonyms to an existing node. Does not delete existing synonyms.
         }
         catch(error) {
             console.error('Error generating graph:', error);
-            console.log('generatedText', generatedText);
+            console.log('GENERATED TEXT ---------------------');
+            console.log(generatedText);
+            console.log('------------------------------------');
         }
 
         return {
             commands: commands,
-            tableRecordCounts: await getTableRecordCounts(),
         };
     }
-    catch(error) {
-        console.error('Error generating graph:', error);
-    }
 }
+
+// Export - Default
+export default LibraryAgent;
