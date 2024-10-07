@@ -27,6 +27,8 @@ Creates a relationship between two nodes. \`relationshipType\` is a string, all 
 For example, "is a form of", "supports", "regulates", etc.  \`confidence\` is an integer between 1 and 100 inclusive.
 Choose a confidence level that reflects your certainty in the relationship.
 
+Example usage: nodeRelationshipCreate("Magnesium Glycinate", "is a form of", "Magnesium", 100)
+
 ## Node Titles
 
 -   Node titles should always be in title case. For example, "ATP Production" instead of "ATP production".

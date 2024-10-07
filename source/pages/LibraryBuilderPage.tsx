@@ -14,6 +14,14 @@ export function LibraryBuilderPage() {
     // State
     const [lastCommandOutput, setLastCommandOutput] = React.useState('');
 
+    // Recurse improveLibrary
+    async function recurseImproveLibrary() {
+        const response = await libraryApiClient.request('improveLibrary');
+        setLastCommandOutput(JSON.stringify(response, null, 4));
+
+        recurseImproveLibrary();
+    }
+
     // Render the component
     return (
         <div className="container pb-32 pt-8">
@@ -67,6 +75,9 @@ export function LibraryBuilderPage() {
                         >
                             Improve Library
                         </Button>
+
+                        {/* Recurse Improve Library */}
+                        <Button onClick={recurseImproveLibrary}>Recurse Improve Library</Button>
                     </div>
                 </div>
                 <div className="ml-4 flex-grow">
