@@ -1,3 +1,6 @@
+// Dependencies - API
+import { type LibraryDatabase } from '@project/source/api/LibraryDatabase';
+
 export interface LibraryNodeInterface {
     id: string;
     status: string;
@@ -117,12 +120,12 @@ export interface DigitalIntelligencePromptInterface {
     createdAt: string;
 }
 
-export interface ChangeDetailInterface {
-    field: string;
-    oldValue?: any;
-    newValue?: any;
-    reason?: string; // Explanation for the change
-}
+// export interface ChangeDetailInterface {
+//     field: string;
+//     oldValue?: any;
+//     newValue?: any;
+//     reason?: string; // Explanation for the change
+// }
 
 export interface LibraryPostInterface {
     id: string;
@@ -135,50 +138,71 @@ export interface LibraryPostInterface {
     createdAt: string;
 }
 
-export interface ComphrensiveLibraryNodeInterface extends LibraryNodeInterface {
+export interface LibraryNodeComprehensiveInterface extends LibraryNodeInterface {
     inboundRelationships: LibraryNodeRelationshipInterface[];
     outboundRelationships: LibraryNodeRelationshipInterface[];
     history: LibraryNodeHistoryInterface[];
 }
 
-export interface ConciseLibraryNodeRelationship {
+export interface LibraryNodeRelationshipConciseInterface {
     relationship: LibraryNodeRelationshipTypeInterface['type'];
     confidence: LibraryNodeRelationshipInterface['confidence'];
 }
 
-export interface ConciseLibraryNodeInboundRelationship extends ConciseLibraryNodeRelationship {
+export interface LibraryNodeInboundRelationshipConciseInterface extends LibraryNodeRelationshipConciseInterface {
     sourceNodeTitle: LibraryNodeInterface['title'];
 }
 
-export interface ConciseLibraryNodeOutboundRelationship extends ConciseLibraryNodeRelationship {
+export interface LibraryNodeOutboundRelationshipConciseInterface extends LibraryNodeRelationshipConciseInterface {
     targetNodeTitle: LibraryNodeInterface['title'];
 }
 
-export interface ConciseLibraryNodeWithRelationships {
+export interface LibraryNodeWithRelationshipsConciseInterface {
     title: LibraryNodeInterface['title'];
-    inboundRelationships: ConciseLibraryNodeInboundRelationship[];
-    outboundRelationships: ConciseLibraryNodeOutboundRelationship[];
+    inboundRelationships: LibraryNodeInboundRelationshipConciseInterface[];
+    outboundRelationships: LibraryNodeOutboundRelationshipConciseInterface[];
 }
 
-export interface getLibraryNodesResponseInterface extends ResponseInterface {
-    data: {
-        libraryNodes: LibraryNodeInterface[];
-        pagination: ResponsePaginationInterface;
-    };
-}
-
-export interface ResponseInterface {
-    error?: string;
-    data?: any;
-}
-
-export interface ResponsePaginationInterface {
+export interface PaginationResponseInterface {
     itemsPerPage: number;
     itemsTotal: number;
     page: number;
     pagesTotal: number;
 }
 
-export interface getLibraryNodeBySlugResponseInterface extends ResponseInterface {
-    data: ComphrensiveLibraryNodeInterface;
+// Define a type map of API calls
+export interface LibraryApiInterface {
+    getTables: {
+        parameters: undefined;
+        response: {
+            data: ReturnType<LibraryDatabase['getTables']>;
+        };
+    };
+    getRandomLibraryNode: {
+        parameters: undefined;
+        response: {
+            data: LibraryNodeComprehensiveInterface;
+        };
+    };
+    getLibraryNodeBySlug: {
+        parameters: {
+            slug: string;
+        };
+        response: {
+            data: LibraryNodeComprehensiveInterface;
+        };
+    };
+    getLibraryNodes: {
+        parameters: {
+            page: number;
+            itemsPerPage: number;
+            searchTerm?: string;
+        };
+        response: {
+            data: {
+                libraryNodes: LibraryNodeInterface[];
+                pagination: PaginationResponseInterface;
+            };
+        };
+    };
 }

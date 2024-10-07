@@ -15,9 +15,9 @@ interface PageInterface {
 
 // Function to get server-side properties
 async function getServerSideProperties(properties: PageInterface) {
-    const getLibraryNodeBySlugResponse = await libraryApiClient.getLibraryNodeBySlug(
-        properties.params.libraryNodeTitleSlug,
-    );
+    const getLibraryNodeBySlugResponse = await libraryApiClient.request('getLibraryNodeBySlug', {
+        slug: properties.params.libraryNodeTitleSlug,
+    });
     // console.log('getLibraryNodeBySlugResponse', getLibraryNodeBySlugResponse);
 
     return getLibraryNodeBySlugResponse;

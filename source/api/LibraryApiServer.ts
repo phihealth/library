@@ -2,58 +2,73 @@
 import type { NextRequest } from 'next/server';
 
 // Dependencies - API
-import { libraryDatabase } from '@project/source/api/LibraryDatabase';
+import { LibraryApiInterface } from '@project/source/api/LibraryApiInterfaces';
+import { LibraryDatabase } from '@project/source/api/LibraryDatabase';
 
 // Class - LibraryApiServer
 export class LibraryApiServer {
     async handleRequest(request: NextRequest) {
-        // console.log('request.nextUrl.pathname', request.nextUrl.pathname);
+        // Initialize the library database
+        const libraryDatabase = new LibraryDatabase();
 
         // Initialize the response
-        let responseJson = {};
+        const response: {
+            error?: unknown;
+            data: unknown | null;
+        } = {
+            data: null,
+        };
+        let responseStatusCode = 200;
 
-        // showTables
-        if(request.nextUrl.pathname === '/api/showTables') {
-            responseJson = await libraryDatabase.showTables();
-        }
-        // getRandomLibraryNode
-        else if(request.nextUrl.pathname === '/api/getRandomLibraryNode') {
-            responseJson = await libraryDatabase.getRandomLibraryNode();
-        }
-        // getLibraryNodeBySlug
-        else if(request.nextUrl.pathname === '/api/getLibraryNodeBySlug') {
-            const slug = request.nextUrl.searchParams.get('slug')!;
+        try {
+            // console.log('request.nextUrl.pathname', request.nextUrl.pathname);
 
-            responseJson = await libraryDatabase.getLibraryNodeBySlug(slug);
-        }
-        // getLibraryNodes
-        else if(request.nextUrl.pathname === '/api/getLibraryNodes') {
-            const page = request.nextUrl.searchParams.get('page')
-                ? Number(request.nextUrl.searchParams.get('page'))
-                : 1;
-            const itemsPerPage = request.nextUrl.searchParams.get('itemsPerPage')
-                ? Number(request.nextUrl.searchParams.get('itemsPerPage'))
-                : 20;
-            const searchTerm = request.nextUrl.searchParams.get('searchTerm');
+            // Get the parameters
+            let parameters = {};
+            try {
+                parameters = await request.json();
+            }
+            catch(error) {
+                // No parameters
+            }
+            // console.log('parameters', parameters);
 
-            responseJson = await libraryDatabase.getLibraryNodes(page, itemsPerPage, searchTerm);
+            // getTables
+            if(request.nextUrl.pathname === '/api/getTables') {
+                response.data = libraryDatabase.getTables();
+            }
+            // getRandomLibraryNode
+            else if(request.nextUrl.pathname === '/api/getRandomLibraryNode') {
+                response.data = libraryDatabase.getRandomLibraryNode(true);
+            }
+            // getLibraryNodes
+            else if(request.nextUrl.pathname === '/api/getLibraryNodes') {
+                const { page, itemsPerPage, searchTerm } =
+                    parameters as LibraryApiInterface['getLibraryNodes']['parameters'];
+                response.data = libraryDatabase.getLibraryNodes(page, itemsPerPage, searchTerm);
+            }
+            // getLibraryNodeBySlug
+            else if(request.nextUrl.pathname === '/api/getLibraryNodeBySlug') {
+                const { slug } = parameters as LibraryApiInterface['getLibraryNodeBySlug']['parameters'];
+                response.data = libraryDatabase.getLibraryNodeBySlug(slug, true);
+            }
+            // improveLibrary
+            else if(request.nextUrl.pathname === '/api/improveLibrary') {
+                // responseJson.data = libraryDatabase.improveLibrary();
+            }
         }
-        // getLibraryNode
-        else if(request.nextUrl.pathname === '/api/getLibraryNode') {
-            responseJson = await libraryDatabase.getLibraryNode();
+        catch(error) {
+            console.error('Error in LibraryApiServer.handleRequest', error);
+            response.error = error;
+            responseStatusCode = 500;
         }
-        // improveLibrary
-        else if(request.nextUrl.pathname === '/api/improveLibrary') {
-            // responseJson = await libraryDatabase.improveLibrary();
-        }
-        // getTableRecordCounts
-        else if(request.nextUrl.pathname === '/api/getTableRecordCounts') {
-            responseJson = await libraryDatabase.getTableRecordCounts();
-        }
+
+        // Close the database connection
+        libraryDatabase.database.close();
 
         // Return the response
-        return new Response(JSON.stringify(responseJson), {
-            status: 200,
+        return new Response(JSON.stringify(response), {
+            status: responseStatusCode,
             headers: {
                 'Content-Type': 'application/json',
             },

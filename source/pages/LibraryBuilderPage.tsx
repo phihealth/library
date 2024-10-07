@@ -6,31 +6,13 @@ import React from 'react';
 // Dependencies - Main Components
 import { Button } from '@structure/source/common/buttons/Button';
 
+// Dependencies - API
+import { libraryApiClient } from '@project/source/api/LibraryApiClient';
+
 // Component - LibraryBuilderPage
 export function LibraryBuilderPage() {
     // State
     const [lastCommandOutput, setLastCommandOutput] = React.useState('');
-
-    // Function
-    const api = async function (path: string) {
-        // setLastCommandOutput('Loading...');
-
-        // Fetch the API
-        const response = await fetch('/api/' + path);
-        let body = await response.text();
-        const json = JSON.parse(body);
-        if(!json.error) {
-            body = JSON.stringify(json, null, 4);
-        }
-
-        // Update the state
-        setLastCommandOutput(body);
-
-        // Recurse
-        if(path == 'improveLibrary') {
-            return api('improveLibrary');
-        }
-    };
 
     // Render the component
     return (
@@ -42,49 +24,48 @@ export function LibraryBuilderPage() {
                     <p className="neutral mb-4 text-xs uppercase">Commands</p>
 
                     <div className="flex flex-col space-y-2">
-                        {/* Show Tables */}
+                        {/* Get Tables */}
                         <Button
-                            onClick={function () {
-                                api('showTables');
+                            onClick={async function () {
+                                setLastCommandOutput(
+                                    JSON.stringify(await libraryApiClient.request('getTables'), null, 4),
+                                );
                             }}
                         >
-                            Show Tables
+                            Get Tables
                         </Button>
 
                         {/* Get Random Library Node */}
                         <Button
-                            onClick={function () {
-                                api('getRandomLibraryNode');
+                            onClick={async function () {
+                                setLastCommandOutput(
+                                    JSON.stringify(await libraryApiClient.request('getRandomLibraryNode'), null, 4),
+                                );
                             }}
                         >
                             Get Random Library Node
                         </Button>
 
-                        {/* Improve Library */}
-                        <Button
-                            onClick={function () {
-                                api('improveLibrary');
-                            }}
-                        >
-                            Improve Library
-                        </Button>
-
                         {/* Get Library Nodes */}
                         <Button
-                            onClick={function () {
-                                api('getLibraryNodes');
+                            onClick={async function () {
+                                setLastCommandOutput(
+                                    JSON.stringify(await libraryApiClient.request('getLibraryNodes'), null, 4),
+                                );
                             }}
                         >
                             Get Library Nodes
                         </Button>
 
-                        {/* Get Table Record Counts */}
+                        {/* Improve Library */}
                         <Button
-                            onClick={function () {
-                                api('getTableRecordCounts');
+                            onClick={async function () {
+                                setLastCommandOutput(
+                                    JSON.stringify(await libraryApiClient.request('improveLibrary'), null, 4),
+                                );
                             }}
                         >
-                            Get Table Record Counts
+                            Improve Library
                         </Button>
                     </div>
                 </div>

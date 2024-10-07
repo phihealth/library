@@ -5,6 +5,6 @@ import type { NextRequest } from 'next/server';
 import { libraryApiServer } from '@project/source/api/LibraryApiServer';
 
 // GET request
-export async function GET(request: NextRequest) {
-    return libraryApiServer.handleRequest(request);
+export async function POST(request: NextRequest) {
+    return await libraryApiServer.handleRequest(request);
 }

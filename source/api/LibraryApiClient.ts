@@ -1,48 +1,26 @@
 // Dependencies - API
-import {
-    getLibraryNodesResponseInterface,
-    getLibraryNodeBySlugResponseInterface,
-} from '@project/source/api/LibraryApiInterfaces';
+import { LibraryApiInterface } from '@project/source/api/LibraryApiInterfaces';
 
 // Class - LibraryApiClient
 export class LibraryApiClient {
-    // Function to fetch the provided API path
-    async fetch(apiPath: string) {
-        // Invoke the HTTP(S) request
-        const url = 'http://localhost:7878/api/' + apiPath;
-        // console.log('url', url);
-        const response = await fetch(url);
+    async request<K extends keyof LibraryApiInterface>(
+        apiMethod: K,
+        parameters?: LibraryApiInterface[K]['parameters'],
+    ): Promise<LibraryApiInterface[K]['response']> {
+        const url = `http://localhost:7878/api/${apiMethod}`;
+
+        const response = await fetch(url, {
+            method: 'POST', // or 'GET' depending on your API method
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: parameters ? JSON.stringify(parameters) : undefined,
+        });
+
         const responseJson = await response.json();
-        // console.log('responseJson', responseJson);
 
-        return responseJson;
-    }
-
-    // Function to get library nodes
-    async getLibraryNodes(
-        page: number,
-        itemsPerPage: number,
-        searchTerm?: string,
-    ): Promise<getLibraryNodesResponseInterface> {
-        const getLibraryNodesResponse = await this.fetch(
-            'getLibraryNodes?' +
-                'page=' +
-                page +
-                '&itemsPerPage=' +
-                itemsPerPage +
-                (searchTerm ? '&searchTerm=' + encodeURIComponent(searchTerm) : ''),
-        );
-        // console.log('getLibraryNodesResponse', getLibraryNodesResponse.responseJson);
-
-        return getLibraryNodesResponse as getLibraryNodesResponseInterface;
-    }
-
-    // Function to get a library node
-    async getLibraryNodeBySlug(slug: string): Promise<getLibraryNodeBySlugResponseInterface> {
-        const getLibraryNodeBySlugResponse = await this.fetch('getLibraryNodeBySlug?slug=' + slug);
-        // console.log('getLibraryNodeBySlugResponse', getLibraryNodeBySlugResponse);
-
-        return getLibraryNodeBySlugResponse as getLibraryNodeBySlugResponseInterface;
+        // Return the typed response
+        return responseJson as LibraryApiInterface[K]['response'];
     }
 }
 

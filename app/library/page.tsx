@@ -17,11 +17,11 @@ interface PageInterface {
 
 // Function to get server-side properties
 async function getServerSideProperties(properties: PageInterface) {
-    const getLibraryNodesResponse = await libraryApi.getLibraryNodes(
-        properties.searchParams.page || 1,
-        properties.searchParams.itemsPerPage || 20,
-        properties.searchParams.searchTerm,
-    );
+    const getLibraryNodesResponse = await libraryApiClient.request('getLibraryNodes', {
+        page: properties.searchParams.page || 1,
+        itemsPerPage: properties.searchParams.itemsPerPage || 20,
+        searchTerm: properties.searchParams.searchTerm,
+    });
     // console.log('getLibraryNodesResponse', getLibraryNodesResponse);
 
     return getLibraryNodesResponse;
