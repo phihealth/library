@@ -11,7 +11,8 @@ export function HomePage() {
     // Render the component
     return (
         <div className="container pb-32 pt-8">
-            <h1 className="mb-8 text-3xl font-medium">Phi</h1>
+            <h1 className="mb-2 text-3xl font-medium">Phi Library</h1>
+            <p className="mb-8 text-lg font-medium">A universal library of infinite wisdom</p>
 
             <div className="flex flex-col space-y-4">
                 <Button href={'/library'}>Enter the Library</Button>

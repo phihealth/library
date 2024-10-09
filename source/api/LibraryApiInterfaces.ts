@@ -184,6 +184,15 @@ export interface LibraryApiInterface {
             data: LibraryNodeComprehensiveInterface;
         };
     };
+    getRandomLibraryNodes: {
+        parameters: {
+            count: number;
+            comprehensive?: boolean;
+        };
+        response: {
+            data: LibraryNodeComprehensiveInterface[];
+        };
+    };
     getLibraryNodeBySlug: {
         parameters: {
             slug: string;

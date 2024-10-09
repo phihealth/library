@@ -42,6 +42,12 @@ export class LibraryApiServer {
             else if(request.nextUrl.pathname === '/api/getRandomLibraryNode') {
                 response.data = libraryDatabase.getRandomLibraryNode(true);
             }
+            // getRandomLibraryNodes
+            else if(request.nextUrl.pathname === '/api/getRandomLibraryNodes') {
+                const { count, comprehensive } =
+                    parameters as LibraryApiInterface['getRandomLibraryNodes']['parameters'];
+                response.data = libraryDatabase.getRandomLibraryNodes(count, comprehensive);
+            }
             // getLibraryNodes
             else if(request.nextUrl.pathname === '/api/getLibraryNodes') {
                 const { page, itemsPerPage, searchTerm } =

@@ -6,8 +6,8 @@ export const ProjectSettings: StructureSettingsInterface = {
     identifier: 'library',
     title: 'Library',
     ownerDisplayName: 'Phi, Inc.',
-    tagline: 'An evolving library of all health information.',
-    description: 'An evolving library of all health information.',
+    tagline: 'A universal library of infinite wisdom.',
+    description: 'A universal library of infinite wisdom.',
     url: 'https://www.phi.health/',
     apis: {
         base: {

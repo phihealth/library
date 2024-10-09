@@ -69,6 +69,117 @@ export class LibraryDatabase {
             });
     }
 
+    updateLibraryNodeTitle(currentTitle: string, newTitle: string, librarianId?: string) {
+        // console.log('Getting library node by title:', currentTitle);
+
+        // Get the LibraryNode
+        const libraryNode = this.getLibraryNodeByTitle(currentTitle);
+        // console.log('libraryNode', libraryNode);
+
+        if(!libraryNode) {
+            console.error('LibraryNode not found for title:', currentTitle);
+            return;
+        }
+
+        // Check to see if another library node has the same slug as the new title
+        const possiblyExistingLibraryNodeWithNewSlug = this.getLibraryNodeBySlug(slug(newTitle));
+        // console.log('possiblyExistingLibraryNodeWithNewSlug', possiblyExistingLibraryNodeWithNewSlug);
+
+        // If the new title is already in use under a different node, delete the current library node
+        if(possiblyExistingLibraryNodeWithNewSlug && possiblyExistingLibraryNodeWithNewSlug.id !== libraryNode.id) {
+            console.log('New title is already in use:', newTitle);
+
+            // Delete any LibraryNodeRelationships with the current LibraryNode as either the source or target
+            this.database
+                .prepare(
+                    'DELETE FROM LibraryNodeRelationship WHERE sourceNodeId = @sourceNodeId OR targetNodeId = @targetNodeId',
+                )
+                .run({
+                    sourceNodeId: libraryNode.id,
+                    targetNodeId: libraryNode.id,
+                });
+
+            // Insert the LibraryNodeRelationshipHistory
+            this.database
+                .prepare(
+                    'INSERT INTO LibraryNodeRelationshipHistory (id, libraryNodeRelationshipId, librarianId, action, metadata) VALUES (@id, @libraryNodeRelationshipId, @librarianId, @action, @metadata)',
+                )
+                .run({
+                    id: uuid(),
+                    libraryNodeRelationshipId: libraryNode.id,
+                    librarianId: librarianId,
+                    action: 'delete',
+                    metadata: JSON.stringify({ title: currentTitle }),
+                });
+
+            // Delete the LibraryNode
+            this.database.prepare('DELETE FROM LibraryNode WHERE id = @id').run({
+                id: libraryNode.id,
+            });
+            console.log('Deleted node:', currentTitle);
+
+            // Insert the LibraryNodeHistory
+            this.database
+                .prepare(
+                    'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata)',
+                )
+                .run({
+                    id: uuid(),
+                    libraryNodeId: libraryNode.id,
+                    librarianId: librarianId,
+                    action: 'delete',
+                    metadata: JSON.stringify({ title: currentTitle }),
+                });
+        }
+        // If the new title is not in use, update the current library node
+        else {
+            // Update the LibraryNode
+            this.database.prepare('UPDATE LibraryNode SET title = @title, slug = @slug WHERE id = @id').run({
+                id: libraryNode.id,
+                title: newTitle,
+                slug: slug(newTitle),
+            });
+            console.log('Updated node title:', currentTitle, 'to', newTitle);
+
+            // Insert the LibraryNodeHistory
+            this.database
+                .prepare(
+                    'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata)',
+                )
+                .run({
+                    id: uuid(),
+                    libraryNodeId: libraryNode.id,
+                    librarianId: librarianId,
+                    action: 'update',
+                    metadata: JSON.stringify({ title: newTitle }),
+                });
+        }
+    }
+
+    deleteLibraryNodeByTitle(title: string, librarianId?: string) {
+        // Get the LibraryNode
+        const libraryNode = this.getLibraryNodeByTitle(title);
+
+        // Delete the LibraryNode
+        this.database.prepare('DELETE FROM LibraryNode WHERE id = @id').run({
+            id: libraryNode.id,
+        });
+        console.log('Deleted node:', title);
+
+        // Insert the LibraryNodeHistory
+        this.database
+            .prepare(
+                'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata)',
+            )
+            .run({
+                id: uuid(),
+                libraryNodeId: libraryNode.id,
+                librarianId: librarianId,
+                action: 'delete',
+                metadata: JSON.stringify({ title }),
+            });
+    }
+
     createLibraryNodeRelationship(sourceTitle: string, targetTitle: string, relationshipType: string) {
         const sourceLibraryNode = this.getLibraryNodeByTitle(sourceTitle);
         const targetLibraryNode = this.getLibraryNodeByTitle(targetTitle);
@@ -167,14 +278,37 @@ export class LibraryDatabase {
     getRandomLibraryNode(comprehensive: boolean = false) {
         // Get the LibraryNode
         const libraryNode = this.database
-            .prepare('SELECT * FROM LibraryNode ORDER BY RANDOM() LIMIT 1')
+            .prepare('SELECT * FROM LibraryNode ORDER BY lastReviewedAt ASC LIMIT 1')
             .get() as LibraryNodeInterface;
+
+        // Update lastReviewedAt
+        this.database.prepare('UPDATE LibraryNode SET lastReviewedAt = @lastReviewedAt WHERE id = @id').run({
+            id: libraryNode.id,
+            lastReviewedAt: new Date().toISOString(),
+        });
 
         if(comprehensive) {
             return this.getLibraryNodeComprehensive(libraryNode);
         }
 
         return libraryNode;
+    }
+
+    getRandomLibraryNodes(count: number = 10, comprehensive: boolean = false) {
+        // Get the LibraryNodes
+        const libraryNodes = this.database
+            .prepare('SELECT * FROM LibraryNode ORDER BY RANDOM() LIMIT @count')
+            .all({ count }) as LibraryNodeInterface[];
+
+        if(comprehensive) {
+            return libraryNodes.map(
+                function (this: LibraryDatabase, libraryNode: LibraryNodeInterface) {
+                    return this.getLibraryNodeComprehensive(libraryNode);
+                }.bind(this),
+            );
+        }
+
+        return libraryNodes;
     }
 
     getOrCreateLibraryNodeByTitle(title: string) {
