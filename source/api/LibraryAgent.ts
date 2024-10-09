@@ -78,46 +78,73 @@ export class LibraryAgent {
     private static async createArticleForNode(database: LibraryDatabase) {
         // Step 1 - Get a random node
         const randomNode = database.getRandomLibraryNode();
-        console.log(`Creating article for node: "${randomNode.title}"`);
+        console.log('\n\n\n');
+        console.log(`\n=== Creating article for: "${randomNode.title}" ===\n`);
 
         // Step 2 - Initialize variables
         let articleContent = '';
         let iteration = 0;
-        const feedbackList: string[] = [];
+        let feedback: string[] = [];
 
-        // Step 3 - Loop up to 10 times with feedback
-        while(iteration < 10) {
+        const loopCount = 5;
+
+        // Step 3 - Loop x times
+        while(iteration < loopCount) {
             iteration++;
+            console.log(`\n--- Iteration ${iteration} ---\n`);
+
             // Generate article content with feedback
-            articleContent = await this.getGeneratedArticle(randomNode, feedbackList);
-            console.log(`Iteration ${iteration}: Generated article for node: "${randomNode.title}"`);
+            articleContent = await this.getGeneratedArticle(randomNode, articleContent, feedback);
+            console.log(`Generated article for node: "${randomNode.title}"`);
+            console.log(randomNode.title, 'Article Content:');
+            console.log(articleContent);
+            console.log('------------------------------------');
 
             if(!articleContent) {
                 console.error('Failed to generate article content.');
                 return;
             }
 
-            // Review the generated article
-            const { isAccepted, feedbacks } = await this.reviewGeneratedArticle(articleContent, randomNode.title);
-            console.log('Feedbacks:', feedbacks);
+            // Only review if not on the last iteration
+            if(loopCount !== iteration) {
+                // Review the generated article
+                const reviewResult = await this.reviewGeneratedArticle(articleContent, randomNode.title);
+                console.log('\n\n\n');
+                console.log(`--- Iteration ${iteration} Feedback ---\n`);
+                reviewResult.feedbacks.forEach((feedback, index) => {
+                    console.log('\n\n');
+                    console.log(`- Reviewer ${index + 1} Feedback -`);
+                    console.log('\n\n');
+                    console.log(feedback);
+                    console.log('\n\n');
+                    console.log('------------');
+                });
+                console.log('------------------------------------');
 
-            if(isAccepted) {
-                console.log(`Article accepted by reviewers at iteration ${iteration}.`);
-                break; // Exit loop if accepted
-            }
-            else {
-                console.info(`Iteration ${iteration}: Article was not accepted. Collecting feedback.`);
-                feedbackList.push(...feedbacks);
+                // Update feedbacks for the next iteration
+                feedback = reviewResult.feedbacks;
             }
         }
 
         // Step 4 - Accept the article in its current state
-        database.updateLibraryNodeArticle(randomNode.title, articleContent);
-        console.log(`Article saved for node: "${randomNode.title}"`);
+        // database.updateLibraryNodeArticle(randomNode.title, articleContent);
+        // console.log(`Article saved for node: "${randomNode.title}"`);
+        console.log('\n=== Final Article Content ===\n');
+        console.log(articleContent);
     }
 
-    private static async getGeneratedArticle(randomNode: any, feedbackList: string[]): Promise<string | null> {
-        const prompt = PromptBuilder.constructArticlePrompt(randomNode.title, feedbackList);
+    private static async getGeneratedArticle(
+        randomNode: any,
+        previousArticleContent?: string,
+        feedbackList?: string[],
+    ): Promise<string | null> {
+        const prompt = PromptBuilder.constructArticlePrompt(randomNode.title, previousArticleContent, feedbackList);
+
+        // console.log('\n\n\n\n');
+        // console.log('Prompt for article generation:');
+        // console.log(prompt);
+        // console.log('\n\n\n\n');
+
         const generatedText = await this.callDigitalIntelligenceWithRetry(prompt);
 
         if(!generatedText) {
@@ -147,14 +174,14 @@ export class LibraryAgent {
             if(response) {
                 const [decisionLine, ...feedbackLines] = response.split('\n');
                 const decision = decisionLine.trim().toLowerCase();
+
+                const feedback = feedbackLines.join('\n').trim();
+                if(feedback) {
+                    feedbacks.push(feedback);
+                }
+
                 if(decision.includes('accept')) {
                     acceptCount++;
-                }
-                else {
-                    const feedback = feedbackLines.join('\n').trim();
-                    if(feedback) {
-                        feedbacks.push(feedback);
-                    }
                 }
             }
         });
@@ -225,7 +252,8 @@ export class LibraryAgent {
 
     private static async callDigitalIntelligenceWithRetry(prompt: string, retries = 3): Promise<string | null> {
         const apiKey = process.env.OPENAI_API_KEY;
-        const url = 'http://localhost:1234/v1/chat/completions';
+        // const url = 'http://localhost:1234/v1/chat/completions';
+        const url = 'http://10.10.100.1:1234/v1/chat/completions';
 
         for(let attempt = 1; attempt <= retries; attempt++) {
             try {
@@ -238,7 +266,7 @@ export class LibraryAgent {
                     body: JSON.stringify({
                         model: 'gpt-4',
                         messages: [{ role: 'user', content: prompt }],
-                        max_tokens: 1000,
+                        max_tokens: 2000,
                     }),
                 });
 

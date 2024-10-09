@@ -46,23 +46,80 @@ ${JSON.stringify(commands, null, 4)}
 Do you accept this change? Answer with "Accept" or "Reject" and provide a brief reason. Make sure to evaluate if the node should be updated, deleted, or left unchanged.`;
     }
 
-    static constructArticlePrompt(title: string, feedbackList: string[]): string {
+    static constructArticlePrompt(title: string, previousArticleContent?: string, feedbackList?: string[]): string {
         let feedbackSection = '';
         if(feedbackList && feedbackList.length > 0) {
             feedbackSection = `
-
-Please consider the following feedback while writing the article:
-${feedbackList.map((feedback, index) => `Feedback ${index + 1}: ${feedback}`).join('\n')}
+**Please carefully review and address the following feedback while revising the article:**
+    
+${feedbackList.map((feedback, index) => `Feedback ${index + 1}:\n${feedback}`).join('\n\n')}
 `;
         }
 
-        return `Please write a comprehensive article in markdown about "${title}". The article should be informative, well-structured, and suitable for inclusion in our library.${feedbackSection}`;
+        let previousArticleSection = '';
+        if(previousArticleContent) {
+            previousArticleSection = `
+**Previous Article Content for Reference:**
+    
+${previousArticleContent}
+    
+---
+`;
+        }
+
+        const newArticleStatement = `Your task is to create an article titled "${title}".`;
+        const reviseArticleStatement = `Your task is to revise and improve the article titled "${title}" by effectively incorporating the feedback provided.`;
+
+        const yourTask =
+            previousArticleContent && previousArticleContent.length ? reviseArticleStatement : newArticleStatement;
+
+        return `You are an expert health writer contributing to our comprehensive health library. ${yourTask} The article should be clear, concise, and informative, suitable for a broad audience interested in health topics.
+
+${feedbackSection}
+
+${previousArticleSection}
+
+**Guidelines:**
+
+- **Objective:** **Produce a final, high-quality article that fully addresses the feedback and meets all guidelines.**
+- **Length:** **Aim for approximately 300-500 words.**
+- **Structure:**
+    - **Introduction:** Briefly introduce the topic and its relevance.
+    - **Main Body:** Cover key aspects such as **causes/risk factors, symptoms, diagnosis, treatment options, and prevention strategies**.
+    - **Conclusion:** Summarize the main points or provide a final thought.
+- **Tone:** Maintain a **neutral, informative tone** throughout the article.
+- **Language:** Use **clear and concise language**. Avoid medical jargon; if technical terms are necessary, provide simple explanations.
+- **Style:**
+    - **Organize content with headings and subheadings.**
+    - **Use bullet points or numbered lists where appropriate.**
+    - **Include relevant examples or analogies** to illustrate key points.
+- **Formatting:** Use proper markdown formatting for headings, lists, and emphasis.
+- **Citations:** Do **not** include citations or references.
+- **Revision Limit:** **This is the final revision opportunity. Ensure all feedback is thoroughly addressed to produce a complete and polished article.**
+
+After completing the article, please provide a brief summary (in 3-4 bullet points) of how you have addressed the feedback.
+
+Begin writing the revised article below.`;
     }
 
     static constructArticleReviewPrompt(articleContent: string, originalTitle: string): string {
-        return `Please review the following article for accuracy, relevance, and quality. Decide whether to accept or reject it for inclusion in the library under the title "${originalTitle}". Provide your decision as "Accept" or "Reject" on the first line, followed by any specific feedback on how to improve the article in subsequent lines.
+        return `You are a senior health editor for our comprehensive health library. Please review the following article titled "${originalTitle}" for adherence to our guidelines.
 
-Article Content:
+**Instructions:**
+
+- Begin your review with your **Decision**: State "Accept" if the article meets the guidelines, or "Revise" if it requires further improvement.
+- If you choose "Revise," provide a prioritized list of the **Top 3-5 Most Important Suggestions** for improvement.
+- Your feedback should be specific, actionable, and aimed at helping the author enhance the article.
+- Focus on significant issues that impact the clarity, accuracy, and usefulness of the article.
+- Make sure the article conforms to the length target of 300-500 words.
+- Do **not** comment on minor grammatical or stylistic issues unless they significantly affect comprehension.
+- Do **not** penalize the author for not including visual aids, as they will be provided by the design team.
+- Do **not** penalize the author for not including citations.
+
+---
+
+**Article Content:**
+
 ${articleContent}`;
     }
 }
