@@ -1,8 +1,19 @@
-## Tool
+## Tools
 
 ### nodeTitleUpdate(currentTitle: string, newTitle: string)
 
 Updates the title of a node. Use this tool to correct the title of a node.
+
+Example usage:
+
+```
+{
+    "command": "nodeTitleUpdate",
+    "currentTitle": "Acne (AC)",
+    "proposedTitle": "Acne",
+    "reason": "\"AC\" is not a common abbreviation for acne, so it should be removed."
+}
+```
 
 ### nodeDelete(currentTitle: string)
 
@@ -11,17 +22,11 @@ Deletes a node entirely from the library. Use this tool if the node is irrelevan
 Example usage:
 
 ```
-[
-    {
-        "command": "nodeTitleUpdate",
-        "currentTitle": "Acne (AC)",
-        "newTitle": "Acne"
-    },
-    {
-        "command": "nodeDelete",
-        "currentTitle": "Obsolete Medical Term"
-    }
-]
+{
+    "command": "nodeDelete",
+    "title": "instead",
+    "reason": "\"instead\" appears to be an entry made by mistake."
+}
 ```
 
 ## Examples
@@ -64,4 +69,4 @@ Reason: The term is outdated and no longer relevant.
 -   Minor formatting changes, like adding punctuation, are acceptable if they improve clarity.
 -   Do not propose changes if the new title would be identical to the current title.
 -   If a node is unnecessary, outdated, or irrelevant, suggest deleting it using the "nodeDelete" command.
--   If no changes are needed, output an empty array.
+-   If no changes are needed, output an empty object, {}.

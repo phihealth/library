@@ -3,6 +3,8 @@ import { default as BetterSqlite3Database, Database } from 'better-sqlite3';
 import { v4 as uuid } from 'uuid';
 import {
     LibraryNodeInterface,
+    LibraryNodeProposalInterface,
+    LibraryNodeProposalReviewInterface,
     LibraryNodeHistoryInterface,
     LibraryNodeRelationshipInterface,
     LibraryNodeRelationshipTypeInterface,
@@ -19,6 +21,18 @@ export class LibraryDatabase {
     constructor() {
         // Connect to the database
         this.database = new BetterSqlite3Database('ProjectDatabase.sqlite');
+    }
+
+    getMySqlDateTimeInUtc() {
+        const date = new Date();
+        const year = date.getUTCFullYear();
+        const month = ('0' + (date.getUTCMonth() + 1)).slice(-2); // Add leading 0
+        const day = ('0' + date.getUTCDate()).slice(-2); // Add leading 0
+        const hours = ('0' + date.getUTCHours()).slice(-2); // Add leading 0
+        const minutes = ('0' + date.getUTCMinutes()).slice(-2); // Add leading 0
+        const seconds = ('0' + date.getUTCSeconds()).slice(-2); // Add leading 0
+
+        return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
     }
 
     getTables() {
@@ -44,32 +58,36 @@ export class LibraryDatabase {
         return tableRecordCounts;
     }
 
-    createLibraryNode(title: string, librarianId?: string) {
+    createLibraryNode(title: string, librarianId: string) {
+        const libraryNodeId = uuid();
+
         // Insert the LibraryNode
         const insertLibraryNodeRunResult = this.database
-            .prepare('INSERT INTO LibraryNode (id, title, slug) VALUES (@id, @title, @slug)')
+            .prepare('INSERT INTO LibraryNode (id, title, slug, createdAt) VALUES (@id, @title, @slug, @createdAt)')
             .run({
-                id: uuid(),
+                id: libraryNodeId,
                 title: title,
                 slug: slug(title),
+                createdAt: this.getMySqlDateTimeInUtc(),
             });
         console.log('Inserted node:', title);
 
         // Insert the LibraryNodeHistory
         this.database
             .prepare(
-                'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata)',
+                'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata, createdAt) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata, @createdAt)',
             )
             .run({
                 id: uuid(),
-                libraryNodeId: insertLibraryNodeRunResult.lastInsertRowid,
+                libraryNodeId: libraryNodeId,
                 librarianId: librarianId,
                 action: 'create',
                 metadata: JSON.stringify({ title }),
+                createdAt: this.getMySqlDateTimeInUtc(),
             });
     }
 
-    updateLibraryNodeTitle(currentTitle: string, newTitle: string, librarianId?: string) {
+    updateLibraryNodeTitle(currentTitle: string, newTitle: string, librarianId: string) {
         // console.log('Getting library node by title:', currentTitle);
 
         // Get the LibraryNode
@@ -102,7 +120,7 @@ export class LibraryDatabase {
             // Insert the LibraryNodeRelationshipHistory
             this.database
                 .prepare(
-                    'INSERT INTO LibraryNodeRelationshipHistory (id, libraryNodeRelationshipId, librarianId, action, metadata) VALUES (@id, @libraryNodeRelationshipId, @librarianId, @action, @metadata)',
+                    'INSERT INTO LibraryNodeRelationshipHistory (id, libraryNodeRelationshipId, librarianId, action, metadata, createdAt) VALUES (@id, @libraryNodeRelationshipId, @librarianId, @action, @metadata, @createdAt)',
                 )
                 .run({
                     id: uuid(),
@@ -110,6 +128,7 @@ export class LibraryDatabase {
                     librarianId: librarianId,
                     action: 'delete',
                     metadata: JSON.stringify({ title: currentTitle }),
+                    createdAt: this.getMySqlDateTimeInUtc(),
                 });
 
             // Delete the LibraryNode
@@ -121,7 +140,7 @@ export class LibraryDatabase {
             // Insert the LibraryNodeHistory
             this.database
                 .prepare(
-                    'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata)',
+                    'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata, createdAt) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata, @createdAt)',
                 )
                 .run({
                     id: uuid(),
@@ -129,6 +148,7 @@ export class LibraryDatabase {
                     librarianId: librarianId,
                     action: 'delete',
                     metadata: JSON.stringify({ title: currentTitle }),
+                    createdAt: this.getMySqlDateTimeInUtc(),
                 });
         }
         // If the new title is not in use, update the current library node
@@ -144,7 +164,7 @@ export class LibraryDatabase {
             // Insert the LibraryNodeHistory
             this.database
                 .prepare(
-                    'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata)',
+                    'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata, createdAt) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata, @createdAt)',
                 )
                 .run({
                     id: uuid(),
@@ -152,11 +172,12 @@ export class LibraryDatabase {
                     librarianId: librarianId,
                     action: 'update',
                     metadata: JSON.stringify({ title: newTitle }),
+                    createdAt: this.getMySqlDateTimeInUtc(),
                 });
         }
     }
 
-    deleteLibraryNodeByTitle(title: string, librarianId?: string) {
+    deleteLibraryNodeByTitle(title: string, librarianId: string) {
         // Get the LibraryNode
         const libraryNode = this.getLibraryNodeByTitle(title);
 
@@ -169,7 +190,7 @@ export class LibraryDatabase {
         // Insert the LibraryNodeHistory
         this.database
             .prepare(
-                'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata)',
+                'INSERT INTO LibraryNodeHistory (id, libraryNodeId, librarianId, action, metadata, createdAt) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata, @createdAt)',
             )
             .run({
                 id: uuid(),
@@ -177,7 +198,79 @@ export class LibraryDatabase {
                 librarianId: librarianId,
                 action: 'delete',
                 metadata: JSON.stringify({ title }),
+                createdAt: this.getMySqlDateTimeInUtc(),
             });
+    }
+
+    getLibraryNodeProposal(libraryNodeProposalId: LibraryNodeProposalInterface['id']) {
+        return this.database
+            .prepare('SELECT * FROM LibraryNodeProposal WHERE id = @id')
+            .get({ id: libraryNodeProposalId }) as LibraryNodeProposalInterface;
+    }
+
+    createLibraryNodeProposal(
+        libraryNodeId: LibraryNodeProposalInterface['librarianId'],
+        librarianId: LibraryNodeProposalInterface['librarianId'],
+        action: LibraryNodeProposalInterface['action'],
+        metadata: LibraryNodeProposalInterface['metadata'],
+    ) {
+        const libraryNodeProposalId = uuid();
+
+        // Insert the LibraryNodeProposal
+        const insertLibraryNodeProposalRunResult = this.database
+            .prepare(
+                'INSERT INTO LibraryNodeProposal (id, libraryNodeId, librarianId, action, metadata, createdAt) VALUES (@id, @libraryNodeId, @librarianId, @action, @metadata, @createdAt)',
+            )
+            .run({
+                id: libraryNodeProposalId,
+                libraryNodeId: libraryNodeId,
+                librarianId: librarianId,
+                action: action,
+                metadata: JSON.stringify(metadata),
+                createdAt: this.getMySqlDateTimeInUtc(),
+            });
+        console.log('Inserted proposal:', insertLibraryNodeProposalRunResult, action, metadata);
+
+        return this.getLibraryNodeProposal(libraryNodeProposalId);
+    }
+
+    updateLibraryNodeProposalStatus(
+        libraryNodeProposalId: LibraryNodeProposalInterface['id'],
+        status: LibraryNodeProposalInterface['status'],
+    ) {
+        // Update the LibraryNodeProposal
+        this.database
+            .prepare('UPDATE LibraryNodeProposal SET status = @status, updatedAt = @updatedAt WHERE id = @id')
+            .run({
+                id: libraryNodeProposalId,
+                status: status,
+                updatedAt: this.getMySqlDateTimeInUtc(),
+            });
+        console.log('Updated proposal status:', libraryNodeProposalId, status);
+    }
+
+    createLibraryNodeProposalReview(
+        libraryNodeProposalId: LibraryNodeProposalReviewInterface['libraryNodeProposalId'],
+        librarianId: LibraryNodeProposalReviewInterface['librarianId'],
+        decision: LibraryNodeProposalReviewInterface['decision'],
+        reason: LibraryNodeProposalReviewInterface['reason'],
+        metadata: Record<string, any>,
+    ) {
+        // Insert the LibraryNodeProposalReview
+        const insertLibraryNodeProposalReviewRunResult = this.database
+            .prepare(
+                'INSERT INTO LibraryNodeProposalReview (id, libraryNodeProposalId, librarianId, decision, reason, metadata, createdAt) VALUES (@id, @libraryNodeProposalId, @librarianId, @decision, @reason, @metadata, @createdAt)',
+            )
+            .run({
+                id: uuid(),
+                libraryNodeProposalId: libraryNodeProposalId,
+                librarianId: librarianId,
+                decision: decision,
+                reason: reason,
+                metadata: JSON.stringify(metadata),
+                createdAt: this.getMySqlDateTimeInUtc(),
+            });
+        console.log('Inserted proposal review:', insertLibraryNodeProposalReviewRunResult, decision, reason);
     }
 
     createLibraryNodeRelationship(sourceTitle: string, targetTitle: string, relationshipType: string) {
@@ -186,52 +279,58 @@ export class LibraryDatabase {
         const libraryNodeRelationshipType = this.getLibraryNodeRelationshipTypeByType(relationshipType);
 
         // Insert the LibraryNodeRelationship
+        const libraryNodeRelationshipId = uuid();
         const insertLibraryNodeRelationshipRunResult = this.database
             .prepare(
-                'INSERT INTO LibraryNodeRelationship (id, sourceNodeId, targetNodeId, relationshipTypeId) VALUES (@id, @sourceNodeId, @targetNodeId, @relationshipTypeId)',
+                'INSERT INTO LibraryNodeRelationship (id, sourceNodeId, targetNodeId, relationshipTypeId, createdAt) VALUES (@id, @sourceNodeId, @targetNodeId, @relationshipTypeId, @createdAt)',
             )
             .run({
-                id: uuid(),
+                id: libraryNodeRelationshipId,
                 sourceNodeId: sourceLibraryNode.id,
                 targetNodeId: targetLibraryNode.id,
                 relationshipTypeId: libraryNodeRelationshipType.id,
+                createdAt: this.getMySqlDateTimeInUtc(),
             });
 
         // Insert the LibraryNodeRelationshipHistory
         this.database
             .prepare(
-                'INSERT INTO LibraryNodeRelationshipHistory (id, libraryNodeRelationshipId, librarianId, action, metadata) VALUES (@id, @libraryNodeRelationshipId, @librarianId, @action, @metadata)',
+                'INSERT INTO LibraryNodeRelationshipHistory (id, libraryNodeRelationshipId, librarianId, action, metadata, createdAt) VALUES (@id, @libraryNodeRelationshipId, @librarianId, @action, @metadata, @createdAt)',
             )
             .run({
                 id: uuid(),
-                libraryNodeRelationshipId: insertLibraryNodeRelationshipRunResult.lastInsertRowid,
+                libraryNodeRelationshipId: libraryNodeRelationshipId,
                 librarianId: 'system',
                 action: 'create',
                 metadata: JSON.stringify({ relationshipType }),
+                createdAt: this.getMySqlDateTimeInUtc(),
             });
     }
 
     createLibraryNodeRelationshipType(type: string) {
         // Insert the LibraryNodeRelationshipType
+        const libraryNodeRelationshipTypeId = uuid();
         const insertLibraryNodeRelationshipTypeRunResult = this.database
-            .prepare('INSERT INTO LibraryNodeRelationshipType (id, type) VALUES (@id, @type)')
+            .prepare('INSERT INTO LibraryNodeRelationshipType (id, type, createdAt) VALUES (@id, @type, @createdAt)')
             .run({
-                id: uuid(),
+                id: libraryNodeRelationshipTypeId,
                 type: type,
+                createdAt: this.getMySqlDateTimeInUtc(),
             });
         console.log('Inserted relationship type:', type);
 
         // Insert the LibraryNodeRelationshipTypeHistory
         this.database
             .prepare(
-                'INSERT INTO LibraryNodeRelationshipTypeHistory (id, libraryNodeRelationshipTypeId, librarianId, action, metadata) VALUES (@id, @libraryNodeRelationshipTypeId, @librarianId, @action, @metadata)',
+                'INSERT INTO LibraryNodeRelationshipTypeHistory (id, libraryNodeRelationshipTypeId, librarianId, action, metadata, createdAt) VALUES (@id, @libraryNodeRelationshipTypeId, @librarianId, @action, @metadata, @createdAt)',
             )
             .run({
                 id: uuid(),
-                libraryNodeRelationshipTypeId: insertLibraryNodeRelationshipTypeRunResult.lastInsertRowid,
+                libraryNodeRelationshipTypeId: libraryNodeRelationshipTypeId,
                 librarianId: 'system',
                 action: 'create',
                 metadata: JSON.stringify({ type }),
+                createdAt: this.getMySqlDateTimeInUtc(),
             });
     }
 
@@ -280,11 +379,12 @@ export class LibraryDatabase {
         const libraryNode = this.database
             .prepare('SELECT * FROM LibraryNode ORDER BY lastReviewedAt ASC LIMIT 1')
             .get() as LibraryNodeInterface;
+        // console.log('libraryNode', libraryNode);
 
         // Update lastReviewedAt
         this.database.prepare('UPDATE LibraryNode SET lastReviewedAt = @lastReviewedAt WHERE id = @id').run({
             id: libraryNode.id,
-            lastReviewedAt: new Date().toISOString(),
+            lastReviewedAt: this.getMySqlDateTimeInUtc(),
         });
 
         if(comprehensive) {
@@ -323,7 +423,7 @@ export class LibraryDatabase {
         if(!libraryNode) {
             // Create the LibraryNode
             // console.log('Creating node:', title);
-            this.createLibraryNode(title);
+            this.createLibraryNode(title, 'System');
 
             // Get the LibraryNode
             libraryNode = this.getLibraryNodeBySlug(slug(title));

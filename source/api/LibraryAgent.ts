@@ -11,17 +11,16 @@ import { slug } from '@structure/source/utilities/String';
 export class LibraryAgent {
     // Define tasks with their associated weights
     static tasks = [
-        { name: 'proposeTitleChanges', method: LibraryAgent.proposeTitleChanges, weight: 0 },
-        { name: 'createArticleForNode', method: LibraryAgent.createArticleForNode, weight: 1 },
-        // You can add more tasks here with their weights
+        { name: 'proposeTitleChanges', method: LibraryAgent.proposeTitleChanges, weight: 1 },
+        { name: 'createArticleForNode', method: LibraryAgent.createArticleForNode, weight: 0 },
     ];
 
     static async improveLibrary(database: LibraryDatabase) {
         try {
             // Select a task based on weights
-            const task = this.selectTaskBasedOnWeight();
+            const task = LibraryAgent.selectTaskBasedOnWeight();
             if(task) {
-                await task.method.call(this, database);
+                await task.method.call(LibraryAgent, database);
             }
             else {
                 console.error('No task selected.');
@@ -51,28 +50,42 @@ export class LibraryAgent {
         const randomNode = database.getRandomLibraryNode();
 
         // Step 2 - Get the proposed changes (title update or delete)
-        const proposedChanges = await this.getProposedTitleChange(randomNode);
+        const proposal = await this.getProposedTitleChange(randomNode);
+        console.log('proposal:', proposal);
 
-        if(!proposedChanges || proposedChanges.length === 0) {
+        if(!proposal) {
             return;
         }
 
+        // Get the proposed change
+        const action = proposal.command === 'nodeTitleUpdate' ? 'UpdateTitle' : 'Delete';
+        const metadata =
+            proposal.command === 'nodeTitleUpdate'
+                ? {
+                      currentTitle: randomNode.title,
+                      proposedTitle: proposal.proposedTitle,
+                      reason: proposal.reason,
+                  }
+                : { reason: proposal.reason };
+
+        // Create the LibraryNodeProposal object
+        const libraryNodeProposal = database.createLibraryNodeProposal(randomNode.id, 'System', action, metadata);
+
         // If the proposed changes include a delete, log the node title
-        if(proposedChanges.some((change) => change.command === 'nodeDelete')) {
+        if(proposal.command === 'nodeDelete') {
             console.log(`Proposed deletion of node: "${randomNode.title}"`);
         }
 
         // Step 3 - Review the proposed changes 3 times in parallel
-        const isAccepted = await this.reviewProposedChange(proposedChanges, randomNode.title);
+        const isAccepted = await this.reviewProposedChange(database, proposal, randomNode.title, randomNode.id);
+
+        // Update the library node proposal status
+        database.updateLibraryNodeProposalStatus(libraryNodeProposal.id, isAccepted ? 'Accepted' : 'Rejected');
 
         // Step 4 - Handle accepted changes (update or delete node)
         if(isAccepted) {
-            this.applyChanges(database, randomNode, proposedChanges);
+            this.applyChanges(database, randomNode, proposal);
         }
-
-        return {
-            commands: proposedChanges,
-        };
     }
 
     private static async createArticleForNode(database: LibraryDatabase) {
@@ -137,7 +150,7 @@ export class LibraryAgent {
         randomNode: any,
         previousArticleContent?: string,
         feedbackList?: string[],
-    ): Promise<string | null> {
+    ) {
         const prompt = PromptBuilder.constructArticlePrompt(randomNode.title, previousArticleContent, feedbackList);
 
         // console.log('\n\n\n\n');
@@ -160,7 +173,7 @@ export class LibraryAgent {
         originalTitle: string,
     ): Promise<{ isAccepted: boolean; feedbacks: string[] }> {
         const reviewerResponses = [];
-        const feedbacks = [];
+        const feedbacks: string[] = [];
 
         for(let i = 0; i < 3; i++) {
             const reviewerPrompt = PromptBuilder.constructArticleReviewPrompt(articleContent, originalTitle);
@@ -173,15 +186,17 @@ export class LibraryAgent {
         reviewerResponses.forEach((response) => {
             if(response) {
                 const [decisionLine, ...feedbackLines] = response.split('\n');
-                const decision = decisionLine.trim().toLowerCase();
+                if(decisionLine) {
+                    const decision = decisionLine.trim().toLowerCase();
 
-                const feedback = feedbackLines.join('\n').trim();
-                if(feedback) {
-                    feedbacks.push(feedback);
-                }
+                    const feedback = feedbackLines.join('\n').trim();
+                    if(feedback) {
+                        feedbacks.push(feedback);
+                    }
 
-                if(decision.includes('accept')) {
-                    acceptCount++;
+                    if(decision.includes('accept')) {
+                        acceptCount++;
+                    }
                 }
             }
         });
@@ -192,62 +207,107 @@ export class LibraryAgent {
     private static async getProposedTitleChange(randomNode: any) {
         const prompt = PromptBuilder.constructInitialPrompt([randomNode.title]);
         const generatedText = await this.callDigitalIntelligenceWithRetry(prompt);
+        console.log('Generated Text:', generatedText);
 
         if(!generatedText) {
             console.error('Failed to get a response for proposed changes.');
-            return [];
+            return null;
         }
 
-        const commands = this.parseCommands(generatedText);
-        return commands;
+        const command = this.parseCommand(generatedText);
+
+        // If the command is nodeTitleUpdate and the new title is the same as the current title, ignore the change
+        if(command && command.command === 'nodeTitleUpdate' && command.proposedTitle === randomNode.title) {
+            return null;
+        }
+
+        // If the command is nodeTitleUpdate and the new title empty, ignore the change
+        if(command && command.command === 'nodeTitleUpdate' && command.proposedTitle === '') {
+            return null;
+        }
+
+        return command;
     }
 
-    private static async reviewProposedChange(commands: any[], originalTitle: string) {
-        const reviewerResponses = [];
-        for(let i = 0; i < 3; i++) {
+    private static async reviewProposedChange(
+        database: LibraryDatabase,
+        commands: any[],
+        originalTitle: string,
+        libraryNodeId: string,
+    ) {
+        // Store how many reviewers accepted the change
+        let acceptCount = 0;
+
+        // Prompt the reviewers
+        const reviewCount = 3;
+        for(let i = 0; i < reviewCount; i++) {
+            // Get the prompt
             const reviewerPrompt = PromptBuilder.constructReviewerPrompt(commands, originalTitle);
 
+            // Get the response
             const response = await this.callDigitalIntelligenceWithRetry(reviewerPrompt);
-            reviewerResponses.push(response);
+            console.log('response:', response);
+
+            if(response) {
+                // Parse the response
+                const jsonStart = response.indexOf('{');
+                const jsonEnd = response.lastIndexOf('}') + 1;
+                if(jsonStart === -1 || jsonEnd === -1) {
+                    throw new Error('JSON object not found in the response.');
+                }
+                const jsonString = response.substring(jsonStart, jsonEnd);
+                // console.log('jsonString', jsonString);
+
+                const responseObject = JSON.parse(jsonString);
+                // console.log('command', command);
+
+                if(responseObject.decision) {
+                    console.log('Decision:', responseObject.decision);
+
+                    if(responseObject.decision.toLowerCase().includes('accept')) {
+                        acceptCount++;
+                    }
+                }
+
+                const decision = responseObject.decision;
+                const reason = responseObject.reason;
+                const metadata = {
+                    title: originalTitle,
+                };
+
+                // Store in the database
+                database.createLibraryNodeProposalReview(libraryNodeId, 'System', decision, reason, metadata);
+            }
         }
 
-        let acceptCount = 0;
-        reviewerResponses.forEach((response) => {
-            if(response && response.toLowerCase().includes('accept')) {
-                acceptCount++;
-            }
-        });
-
-        return acceptCount === 3;
+        return acceptCount === reviewCount;
     }
 
-    private static applyChanges(database: LibraryDatabase, node: any, commands: any[]) {
-        commands.forEach((command) => {
-            // Node title update
-            if(command.command === 'nodeTitleUpdate') {
-                // Handle node title update
-                if(node.title !== command.newTitle) {
-                    console.log(`Updating node title: "${node.title}" to "${command.newTitle}"`);
+    private static applyChanges(database: LibraryDatabase, node: any, command: any) {
+        // Node title update
+        if(command.command === 'nodeTitleUpdate') {
+            // Handle node title update
+            if(node.title !== command.proposedTitle) {
+                console.log(`Updating node title: "${node.title}" to "${command.proposedTitle}"`);
 
-                    let newTitle = command.newTitle;
-                    newTitle = newTitle.trim();
+                let proposedTitle = command.proposedTitle;
+                proposedTitle = proposedTitle.trim();
 
-                    // Replace all & with 'and'
-                    newTitle = newTitle.replace(/&/g, 'and');
+                // Replace all & with 'and'
+                proposedTitle = proposedTitle.replace(/&/g, 'and');
 
-                    database.updateLibraryNodeTitle(node.title, newTitle);
-                }
-                else {
-                    console.log('Proposed title is identical to current title. No update needed.');
-                }
+                database.updateLibraryNodeTitle(node.title, proposedTitle, 'System');
             }
-            // Node deletion
-            else if(command.command === 'nodeDelete') {
-                // Handle node deletion
-                console.log(`Deleting node: "${node.title}"`);
-                database.deleteLibraryNodeByTitle(node.title);
+            else {
+                console.log('Proposed title is identical to current title. No update needed.');
             }
-        });
+        }
+        // Node deletion
+        else if(command.command === 'nodeDelete') {
+            // Handle node deletion
+            console.log(`Deleting node: "${node.title}"`);
+            database.deleteLibraryNodeByTitle(node.title, 'System');
+        }
     }
 
     private static async callDigitalIntelligenceWithRetry(prompt: string, retries = 3): Promise<string | null> {
@@ -292,6 +352,46 @@ export class LibraryAgent {
         return null;
     }
 
+    // Validate a single command
+    private static validateCommand(command: any): boolean {
+        return (
+            command && command.command && (command.command === 'nodeTitleUpdate' || command.command === 'nodeDelete')
+        );
+    }
+
+    // Assumes a JSON object with a single command in the generated text
+    private static parseCommand(generatedText: string) {
+        try {
+            // Remove code block markers and any text before/after JSON
+            const jsonStart = generatedText.indexOf('{');
+            const jsonEnd = generatedText.lastIndexOf('}') + 1;
+            if(jsonStart === -1 || jsonEnd === -1) {
+                throw new Error('JSON object not found in the response.');
+            }
+            const jsonString = generatedText.substring(jsonStart, jsonEnd);
+            // console.log('jsonString', jsonString);
+
+            const command = JSON.parse(jsonString);
+            // console.log('command', command);
+
+            // Validate command
+            if(this.validateCommand(command)) {
+                // console.log('Valid command:', command);
+                return command;
+            }
+            else {
+                // console.error('Invalid command format or no actual change.', command);
+                return null;
+            }
+        }
+        catch(error) {
+            console.error('Error parsing command:', error);
+            console.debug('Generated Text:', generatedText);
+            return null;
+        }
+    }
+
+    // Assumes a JSON array of commands in the generated text
     private static parseCommands(generatedText: string) {
         try {
             // Remove code block markers and any text before/after JSON
@@ -307,11 +407,7 @@ export class LibraryAgent {
             // Validate commands
             if(Array.isArray(commands) && commands.length > 0) {
                 for(const command of commands) {
-                    if(
-                        !command.command ||
-                        (command.command !== 'nodeTitleUpdate' && command.command !== 'nodeDelete') ||
-                        (command.command === 'nodeTitleUpdate' && !command.newTitle)
-                    ) {
+                    if(!this.validateCommand(command)) {
                         throw new Error('Invalid command format or no actual change.');
                     }
                 }

@@ -6,6 +6,73 @@ export interface LibraryNodeInterface {
     status: string;
     title: string;
     slug: string;
+    lastReviewedAt: string;
+    updatedAt: string;
+    createdAt: string;
+}
+
+// Define Metadata Types
+interface LibraryNodeProposalUpdateTitleMetadataInterface {
+    currentTitle: string;
+    proposedTitle: string;
+    reason: string;
+}
+
+interface LibraryNodeProposalDeleteMetadataInterface {
+    reason: string;
+}
+
+interface LibraryNodeProposalCreateMetadataInterface {
+    title: string;
+    reason?: string;
+}
+
+interface LibraryNodeProposalMergeMetadataInterface {
+    sourceNodeId: string;
+    targetNodeId: string;
+    reason?: string;
+}
+
+// Discriminated Union for LibraryNodeProposalInterface
+export interface LibraryNodeProposalBaseInterface {
+    id: string;
+    libraryNodeId: string;
+    librarianId: string;
+    status: 'Pending' | 'Accepted' | 'Rejected';
+    updatedAt: string;
+    createdAt: string;
+}
+
+export interface UpdateTitleProposal extends LibraryNodeProposalBaseInterface {
+    action: 'UpdateTitle';
+    metadata: LibraryNodeProposalUpdateTitleMetadataInterface;
+}
+
+export interface DeleteProposal extends LibraryNodeProposalBaseInterface {
+    action: 'Delete';
+    metadata: LibraryNodeProposalDeleteMetadataInterface;
+}
+
+export interface CreateProposal extends LibraryNodeProposalBaseInterface {
+    action: 'Create';
+    metadata: LibraryNodeProposalCreateMetadataInterface;
+}
+
+export interface MergeProposal extends LibraryNodeProposalBaseInterface {
+    action: 'Merge';
+    metadata: LibraryNodeProposalMergeMetadataInterface;
+}
+
+// Union Type for LibraryNodeProposalInterface
+export type LibraryNodeProposalInterface = UpdateTitleProposal | DeleteProposal | CreateProposal | MergeProposal;
+
+export interface LibraryNodeProposalReviewInterface {
+    id: string;
+    libraryNodeProposalId: string;
+    librarianId: string;
+    decision: string; // 'Accept' or 'Reject'
+    reason: string; // Explanation for the decision in markdown
+    metadata: string; // JSON string
     updatedAt: string;
     createdAt: string;
 }

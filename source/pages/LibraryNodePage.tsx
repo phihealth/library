@@ -43,9 +43,35 @@ export function LibraryNodePage(properties: LibraryNodePageInterface) {
                     <div>{properties.libraryNode.slug}</div>
                 </div>
 
+                {/* Last Reviewed At */}
+                <div>
+                    <div className="neutral text-xs uppercase">Time Last Reviewed</div>
+                    <div>
+                        {/* lastReviewedAt is in UTC */}
+                        {/* 2024-10-09T05:10:17.263Z */}
+                        {properties.libraryNode.lastReviewedAt}
+                        {properties.libraryNode.lastReviewedAt ? (
+                            <>
+                                {' '}
+                                (
+                                {timeAgo(
+                                    new Date(
+                                        properties.libraryNode.lastReviewedAt
+                                            // Replace the .263
+                                            .replace(/\.\d+/, ''),
+                                    ).getTime(),
+                                )}
+                                )
+                            </>
+                        ) : (
+                            'Not Reviewed'
+                        )}
+                    </div>
+                </div>
+
                 {/* Updated At */}
                 <div>
-                    <div className="neutral text-xs uppercase">Updated At</div>
+                    <div className="neutral text-xs uppercase">Time Updated</div>
                     <div>
                         {/* updatedAt is in UTC */}
                         {properties.libraryNode.updatedAt} (
@@ -55,7 +81,7 @@ export function LibraryNodePage(properties: LibraryNodePageInterface) {
 
                 {/* Created At */}
                 <div>
-                    <div className="neutral text-xs uppercase">Created At</div>
+                    <div className="neutral text-xs uppercase">Time Created</div>
                     <div>
                         {/* createdAt is in UTC */}
                         {properties.libraryNode.createdAt} (
