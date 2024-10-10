@@ -51,7 +51,7 @@ export class LibraryAgent {
 
         // Step 2 - Get the proposed changes (title update or delete)
         const proposal = await this.getProposedTitleChange(randomNode);
-        console.log('proposal:', proposal);
+        // console.log('proposal:', proposal);
 
         if(!proposal) {
             return;
@@ -73,11 +73,17 @@ export class LibraryAgent {
 
         // If the proposed changes include a delete, log the node title
         if(proposal.command === 'nodeDelete') {
-            console.log(`Proposed deletion of node: "${randomNode.title}"`);
+            // console.log(`Proposed deletion of node: "${randomNode.title}"`);
         }
 
         // Step 3 - Review the proposed changes 3 times in parallel
-        const isAccepted = await this.reviewProposedChange(database, proposal, randomNode.title, randomNode.id);
+        const isAccepted = await this.reviewProposedChange(
+            database,
+            proposal,
+            randomNode.title,
+            randomNode.id,
+            libraryNodeProposal.id,
+        );
 
         // Update the library node proposal status
         database.updateLibraryNodeProposalStatus(libraryNodeProposal.id, isAccepted ? 'Accepted' : 'Rejected');
@@ -207,7 +213,7 @@ export class LibraryAgent {
     private static async getProposedTitleChange(randomNode: any) {
         const prompt = PromptBuilder.constructInitialPrompt([randomNode.title]);
         const generatedText = await this.callDigitalIntelligenceWithRetry(prompt);
-        console.log('Generated Text:', generatedText);
+        // console.log('Generated Text:', generatedText);
 
         if(!generatedText) {
             console.error('Failed to get a response for proposed changes.');
@@ -234,6 +240,7 @@ export class LibraryAgent {
         commands: any[],
         originalTitle: string,
         libraryNodeId: string,
+        libraryNodeProposalId: string,
     ) {
         // Store how many reviewers accepted the change
         let acceptCount = 0;
@@ -246,7 +253,7 @@ export class LibraryAgent {
 
             // Get the response
             const response = await this.callDigitalIntelligenceWithRetry(reviewerPrompt);
-            console.log('response:', response);
+            // console.log('response:', response);
 
             if(response) {
                 // Parse the response
@@ -262,7 +269,7 @@ export class LibraryAgent {
                 // console.log('command', command);
 
                 if(responseObject.decision) {
-                    console.log('Decision:', responseObject.decision);
+                    // console.log('Decision:', responseObject.decision);
 
                     if(responseObject.decision.toLowerCase().includes('accept')) {
                         acceptCount++;
@@ -276,7 +283,7 @@ export class LibraryAgent {
                 };
 
                 // Store in the database
-                database.createLibraryNodeProposalReview(libraryNodeId, 'System', decision, reason, metadata);
+                database.createLibraryNodeProposalReview(libraryNodeProposalId, 'System', decision, reason, metadata);
             }
         }
 
@@ -288,7 +295,7 @@ export class LibraryAgent {
         if(command.command === 'nodeTitleUpdate') {
             // Handle node title update
             if(node.title !== command.proposedTitle) {
-                console.log(`Updating node title: "${node.title}" to "${command.proposedTitle}"`);
+                // console.log(`Updating node title: "${node.title}" to "${command.proposedTitle}"`);
 
                 let proposedTitle = command.proposedTitle;
                 proposedTitle = proposedTitle.trim();
@@ -299,13 +306,13 @@ export class LibraryAgent {
                 database.updateLibraryNodeTitle(node.title, proposedTitle, 'System');
             }
             else {
-                console.log('Proposed title is identical to current title. No update needed.');
+                // console.log('Proposed title is identical to current title. No update needed.');
             }
         }
         // Node deletion
         else if(command.command === 'nodeDelete') {
             // Handle node deletion
-            console.log(`Deleting node: "${node.title}"`);
+            // console.log(`Deleting node: "${node.title}"`);
             database.deleteLibraryNodeByTitle(node.title, 'System');
         }
     }

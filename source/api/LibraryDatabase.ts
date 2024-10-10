@@ -70,7 +70,7 @@ export class LibraryDatabase {
                 slug: slug(title),
                 createdAt: this.getMySqlDateTimeInUtc(),
             });
-        console.log('Inserted node:', title);
+        // console.log('Inserted node:', title);
 
         // Insert the LibraryNodeHistory
         this.database
@@ -81,7 +81,7 @@ export class LibraryDatabase {
                 id: uuid(),
                 libraryNodeId: libraryNodeId,
                 librarianId: librarianId,
-                action: 'create',
+                action: 'Create',
                 metadata: JSON.stringify({ title }),
                 createdAt: this.getMySqlDateTimeInUtc(),
             });
@@ -126,7 +126,7 @@ export class LibraryDatabase {
                     id: uuid(),
                     libraryNodeRelationshipId: libraryNode.id,
                     librarianId: librarianId,
-                    action: 'delete',
+                    action: 'Delete',
                     metadata: JSON.stringify({ title: currentTitle }),
                     createdAt: this.getMySqlDateTimeInUtc(),
                 });
@@ -146,7 +146,7 @@ export class LibraryDatabase {
                     id: uuid(),
                     libraryNodeId: libraryNode.id,
                     librarianId: librarianId,
-                    action: 'delete',
+                    action: 'Delete',
                     metadata: JSON.stringify({ title: currentTitle }),
                     createdAt: this.getMySqlDateTimeInUtc(),
                 });
@@ -154,12 +154,17 @@ export class LibraryDatabase {
         // If the new title is not in use, update the current library node
         else {
             // Update the LibraryNode
-            this.database.prepare('UPDATE LibraryNode SET title = @title, slug = @slug WHERE id = @id').run({
-                id: libraryNode.id,
-                title: newTitle,
-                slug: slug(newTitle),
-            });
-            console.log('Updated node title:', currentTitle, 'to', newTitle);
+            this.database
+                .prepare('UPDATE LibraryNode SET title = @title, slug = @slug, updatedAt = @updatedAt WHERE id = @id')
+                .run({
+                    id: libraryNode.id,
+                    title: newTitle,
+                    slug: slug(newTitle),
+                    updatedAt: this.getMySqlDateTimeInUtc(),
+                });
+            console.log('- Updated Node Title -');
+            console.log('    ', currentTitle, '->');
+            console.log('    ', newTitle);
 
             // Insert the LibraryNodeHistory
             this.database
@@ -170,8 +175,8 @@ export class LibraryDatabase {
                     id: uuid(),
                     libraryNodeId: libraryNode.id,
                     librarianId: librarianId,
-                    action: 'update',
-                    metadata: JSON.stringify({ title: newTitle }),
+                    action: 'Update',
+                    metadata: JSON.stringify({ previousTitle: currentTitle, newTitle: newTitle }),
                     createdAt: this.getMySqlDateTimeInUtc(),
                 });
         }
@@ -185,7 +190,7 @@ export class LibraryDatabase {
         this.database.prepare('DELETE FROM LibraryNode WHERE id = @id').run({
             id: libraryNode.id,
         });
-        console.log('Deleted node:', title);
+        // console.log('Deleted node:', title);
 
         // Insert the LibraryNodeHistory
         this.database
@@ -196,7 +201,7 @@ export class LibraryDatabase {
                 id: uuid(),
                 libraryNodeId: libraryNode.id,
                 librarianId: librarianId,
-                action: 'delete',
+                action: 'Delete',
                 metadata: JSON.stringify({ title }),
                 createdAt: this.getMySqlDateTimeInUtc(),
             });
@@ -209,7 +214,7 @@ export class LibraryDatabase {
     }
 
     createLibraryNodeProposal(
-        libraryNodeId: LibraryNodeProposalInterface['librarianId'],
+        libraryNodeId: LibraryNodeProposalInterface['libraryNodeId'],
         librarianId: LibraryNodeProposalInterface['librarianId'],
         action: LibraryNodeProposalInterface['action'],
         metadata: LibraryNodeProposalInterface['metadata'],
@@ -229,7 +234,7 @@ export class LibraryDatabase {
                 metadata: JSON.stringify(metadata),
                 createdAt: this.getMySqlDateTimeInUtc(),
             });
-        console.log('Inserted proposal:', insertLibraryNodeProposalRunResult, action, metadata);
+        // console.log('Inserted proposal:', insertLibraryNodeProposalRunResult, action, metadata);
 
         return this.getLibraryNodeProposal(libraryNodeProposalId);
     }
@@ -246,7 +251,7 @@ export class LibraryDatabase {
                 status: status,
                 updatedAt: this.getMySqlDateTimeInUtc(),
             });
-        console.log('Updated proposal status:', libraryNodeProposalId, status);
+        // console.log('Updated proposal status:', libraryNodeProposalId, status);
     }
 
     createLibraryNodeProposalReview(
@@ -270,7 +275,7 @@ export class LibraryDatabase {
                 metadata: JSON.stringify(metadata),
                 createdAt: this.getMySqlDateTimeInUtc(),
             });
-        console.log('Inserted proposal review:', insertLibraryNodeProposalReviewRunResult, decision, reason);
+        // console.log('Inserted proposal review:', insertLibraryNodeProposalReviewRunResult, decision, reason);
     }
 
     createLibraryNodeRelationship(sourceTitle: string, targetTitle: string, relationshipType: string) {
@@ -301,7 +306,7 @@ export class LibraryDatabase {
                 id: uuid(),
                 libraryNodeRelationshipId: libraryNodeRelationshipId,
                 librarianId: 'system',
-                action: 'create',
+                action: 'Create',
                 metadata: JSON.stringify({ relationshipType }),
                 createdAt: this.getMySqlDateTimeInUtc(),
             });
@@ -317,7 +322,7 @@ export class LibraryDatabase {
                 type: type,
                 createdAt: this.getMySqlDateTimeInUtc(),
             });
-        console.log('Inserted relationship type:', type);
+        // console.log('Inserted relationship type:', type);
 
         // Insert the LibraryNodeRelationshipTypeHistory
         this.database
@@ -328,7 +333,7 @@ export class LibraryDatabase {
                 id: uuid(),
                 libraryNodeRelationshipTypeId: libraryNodeRelationshipTypeId,
                 librarianId: 'system',
-                action: 'create',
+                action: 'Create',
                 metadata: JSON.stringify({ type }),
                 createdAt: this.getMySqlDateTimeInUtc(),
             });
@@ -342,11 +347,15 @@ export class LibraryDatabase {
         // Get the history
         const history = this.getLibraryNodeHistory(libraryNode.id);
 
+        // Get the proposals and reviews
+        const proposals = this.getLibraryNodeProposals(libraryNode.id);
+
         return {
             ...libraryNode,
             inboundRelationships,
             outboundRelationships,
-            history,
+            history: history,
+            proposals: proposals,
         } as LibraryNodeComprehensiveInterface;
     }
 
@@ -512,6 +521,35 @@ export class LibraryDatabase {
         return this.database
             .prepare('SELECT * FROM LibraryNodeHistory WHERE libraryNodeId = @libraryNodeId ORDER BY createdAt DESC')
             .all({ libraryNodeId }) as LibraryNodeHistoryInterface[];
+    }
+
+    getLibraryNodeProposals(libraryNodeId: string) {
+        // Get the LibraryNodeProposals
+        const libraryNodeProposals = this.database
+            .prepare('SELECT * FROM LibraryNodeProposal WHERE libraryNodeId = @libraryNodeId ORDER BY createdAt DESC')
+            .all({ libraryNodeId }) as LibraryNodeProposalInterface[];
+        // console.log('libraryNodeProposals', libraryNodeProposals);
+
+        // Get the LibraryNodeProposalReviews
+        const libraryNodeProposalReviews = this.database
+            .prepare(
+                'SELECT * FROM LibraryNodeProposalReview WHERE libraryNodeProposalId IN (' +
+                    libraryNodeProposals.map((libraryNodeProposal) => `'${libraryNodeProposal.id}'`).join(', ') +
+                    ') ORDER BY createdAt DESC',
+            )
+            .all() as LibraryNodeProposalReviewInterface[];
+        // console.log('libraryNodeProposalReviews', libraryNodeProposalReviews);
+
+        // Map reviews to their corresponding proposals
+        const proposalsWithReviews = libraryNodeProposals.map((proposal) => {
+            const reviews = libraryNodeProposalReviews.filter((review) => review.libraryNodeProposalId === proposal.id);
+            return {
+                ...proposal,
+                reviews,
+            };
+        });
+
+        return proposalsWithReviews;
     }
 }
 
