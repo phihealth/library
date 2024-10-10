@@ -6,7 +6,6 @@ import Link from 'next/link';
 
 // Dependencies - Main Components
 import { Markdown } from '@structure/source/common/markdown/Markdown';
-import { ThemeToggle } from '@structure/source/theme/ThemeToggle';
 
 // Dependencies - Assets
 import PhiIcon from '@structure/assets/icons/platforms/PhiIcon.svg';
@@ -18,8 +17,6 @@ export function LibraryPostPage(properties: LibraryPostPageInterface) {
     // Render the component
     return (
         <div className="container max-w-[680px] pb-32 pt-16">
-            <ThemeToggle className="absolute right-4 top-4" />
-
             <h1 className="text-4xl font-bold">Mindfulness and Meditation</h1>
             <h3 className="neutral mt-3 text-xl">Finding Calm in the Chaos</h3>
 

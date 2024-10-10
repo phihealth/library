@@ -88,8 +88,10 @@ export function LibraryBuilderPage() {
     const sortedDurations = [...requestDurations].sort((a, b) => a - b);
     const p50Index = Math.floor(sortedDurations.length * 0.5);
     const p90Index = Math.floor(sortedDurations.length * 0.9);
+    const p99Index = Math.floor(sortedDurations.length * 0.99);
     const p50RequestTime = sortedDurations[p50Index] ? sortedDurations[p50Index].toFixed(3) : '0.0';
     const p90RequestTime = sortedDurations[p90Index] ? sortedDurations[p90Index].toFixed(3) : '0.0';
+    const p99RequestTime = sortedDurations[p99Index] ? sortedDurations[p99Index].toFixed(3) : '0.0';
 
     // Render the component
     return (
@@ -112,6 +114,7 @@ export function LibraryBuilderPage() {
                 <p className="neutral mt-2 text-xs">Requests per Month: {addCommas(requestsPerMonth)}</p>
                 <p className="neutral mt-2 text-xs">p50 Request Time: {addCommas(p50RequestTime)}s</p>
                 <p className="neutral mt-2 text-xs">p90 Request Time: {addCommas(p90RequestTime)}s</p>
+                <p className="neutral mt-2 text-xs">p99 Request Time: {addCommas(p99RequestTime)}s</p>
             </div>
 
             <div className="flex">
