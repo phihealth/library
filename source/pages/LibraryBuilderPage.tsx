@@ -96,7 +96,7 @@ export function LibraryBuilderPage() {
     // Render the component
     return (
         <div className="container pb-32 pt-8">
-            <h1 className="mb-8 text-3xl font-medium">Library Builder</h1>
+            <h1 className="mb-8 text-3xl font-medium">Builder</h1>
 
             <div className="mb-8">
                 <Button onClick={toggleImprovingLibrary} loading={isImprovingLibrary}>

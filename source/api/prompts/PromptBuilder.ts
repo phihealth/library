@@ -1,6 +1,23 @@
 // Dependencies - Prompts
 import ToolPrompt from './ToolPrompt.md';
 
+// Dependencies - API
+import {
+    LibraryNodeInterface,
+    LibraryNodeProposalInterface,
+    LibraryNodeProposalReviewInterface,
+    LibraryNodeHistoryInterface,
+    LibraryNodeRelationshipInterface,
+    LibraryNodeRelationshipTypeInterface,
+    LibraryNodeComprehensiveInterface,
+    LibraryPostInterface,
+    LibraryPostHistoryInterface,
+    LibraryPostVersionInterface,
+    LibraryPostVersionReviewInterface,
+    LibraryPostVersionAnnotationInterface,
+} from '@project/source/api/LibraryApiInterfaces';
+import { LibraryAgent } from '@project/source/api/LibraryAgent';
+
 // Class - PromptBuilder
 export class PromptBuilder {
     static getGuidelines() {
@@ -57,22 +74,35 @@ Only output a valid JSON object. Do not include any additional text or comments.
 `;
     }
 
-    static constructArticlePrompt(title: string, previousArticleContent?: string, feedbackList?: string[]): string {
+    static constructArticlePrompt(
+        title: string,
+        articleObject?: ReturnType<typeof LibraryAgent.parseGeneratedArticle> | null,
+        libraryPostVersionReviews?: LibraryPostVersionReviewInterface[],
+    ): string {
         let feedbackSection = '';
-        if(feedbackList && feedbackList.length > 0) {
+        if(libraryPostVersionReviews && libraryPostVersionReviews.length > 0) {
             feedbackSection = `
 **Important: Carefully review and fully address the following feedback in your revision. Failure to do so will result in rejection of the article.**
 
-${feedbackList.map((feedback, index) => `Feedback ${index + 1}:\n${feedback}`).join('\n\n')}
+${libraryPostVersionReviews
+    .map((libraryPostVersionReview, index) => `Feedback ${index + 1}:\n${libraryPostVersionReview.review}`)
+    .join('\n\n')}
 `;
         }
 
         let previousArticleSection = '';
-        if(previousArticleContent) {
+        if(articleObject) {
             previousArticleSection = `
 **Previous Article Content for Reference:**
 
-${previousArticleContent}
+Title: ${articleObject.title}
+
+Subtitle: ${articleObject.subtitle}
+
+Description: ${articleObject.description}
+
+Content:
+${articleObject.content}
 
 ---
 `;
@@ -81,8 +111,7 @@ ${previousArticleContent}
         const newArticleStatement = `Your task is to **create a new, high-quality article** titled "${title}".`;
         const reviseArticleStatement = `Your task is to **revise and significantly improve** the article titled "${title}" by fully incorporating the feedback provided.`;
 
-        const yourTask =
-            previousArticleContent && previousArticleContent.length ? reviseArticleStatement : newArticleStatement;
+        const yourTask = articleObject && articleObject.content ? reviseArticleStatement : newArticleStatement;
 
         return `You are an expert health writer contributing to our comprehensive health library. ${yourTask} The article should be clear, concise, and informative, suitable for a broad audience interested in health topics.
 
@@ -112,21 +141,45 @@ ${previousArticleSection}
 
 **Note:** Focus on significant improvements that enhance clarity, depth, and usefulness of the article. Ensure conciseness by avoiding redundancies and overly complex sentences.
 
-After completing the article, please provide a brief summary (in 3-4 bullet points) of how you have addressed the feedback.
+Your response must be structured as follows:
 
-Begin writing the revised article below.`;
+ARTICLE_TITLE_START
+The Article Title
+ARTICLE_TITLE_END
+
+ARTICLE_SUBTITLE_START
+The Article Subtitle
+ARTICLE_SUBTITLE_END
+
+FEEDBACK_RESPONSE_START
+A brief summary (in 3-4 bullet points) of how you have addressed the feedback.
+FEEDBACK_RESPONSE_END
+
+ARTICLE_CONTENT_START
+The article content goes here in markdown format. Do not include the title or subtitle again. Be sure to use markdown, which is helpful for headings and lists where appropriate.
+ARTICLE_CONTENT_END
+
+ARTICLE_SUMMARY_START
+One to two sentences summarizing the article.
+ARTICLE_SUMMARY_END
+
+Please begin.`;
     }
 
-    static constructArticleReviewPrompt(articleContent: string, originalTitle: string): string {
-        return `You are a senior health editor for our comprehensive health library. Please review the following article titled "${originalTitle}" for adherence to our guidelines.
+    static constructArticleReviewPrompt(
+        libraryPostVersion: LibraryPostVersionInterface,
+        libraryNodeTyle: string,
+    ): string {
+        return `You are a senior health editor for our comprehensive health library. Please review the following article about the topic "${libraryNodeTyle}" for adherence to our guidelines.
 
 **Instructions:**
 
 - Begin your review with your **Decision**: State "Accept" if the article meets the guidelines, or "Revise" if it requires further improvement.
-- If you choose "Revise," provide **Two Most Important Suggestions** for improvement.
+- If you choose "Revise," provide **Top Most Important Suggestions** for improvement. Include one, two, or three suggestions.
 - Your feedback should be specific, actionable, and aimed at helping the author enhance the article.
 - Focus on significant issues that impact the clarity, accuracy, and usefulness of the article.
 - Ensure the article conforms to the length target of 300-500 words.
+- Make sure the article content is written in markdown.
 - Do **not** comment on minor grammatical or stylistic issues unless they significantly affect comprehension.
 - Do **not** penalize the author for not including visual aids, as they will be provided by the design team.
 - Do **not** penalize the author for not including citations or statistics.
@@ -135,7 +188,11 @@ Begin writing the revised article below.`;
 
 **Article Content:**
 
-${articleContent}`;
+Title: ${libraryPostVersion.title}
+Subtitle: ${libraryPostVersion.subtitle}
+Summary: ${libraryPostVersion.description}
+Content:
+${libraryPostVersion.content}`;
     }
 }
 

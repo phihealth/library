@@ -196,19 +196,71 @@ export interface DigitalIntelligencePromptInterface {
 
 export interface LibraryPostInterface {
     id: string;
-    title: string;
-    description: string;
-    content: string;
     libraryNodeId?: string;
     libraryNodeRelationshipId?: string;
+    activeLibraryPostVersionId?: string;
+    status: 'Draft' | 'Published' | 'Archived';
     updatedAt: string;
     createdAt: string;
+}
+
+export interface LibraryPostHistoryInterface {
+    id: string;
+    libraryPostId: string;
+    librarianId: string;
+    action: string;
+    metadata: string;
+    createdAt: string;
+}
+
+export interface LibraryPostVersionInterface {
+    id: string;
+    libraryPostId: string;
+    librarianId: string;
+    status: 'Draft' | 'InReview' | 'Approved' | 'Rejected';
+    title: string;
+    subtitle: string;
+    content: string;
+    description: string;
+    notesForReviewers?: string; // Notes by the author to reviewers
+    updatedAt: string;
+    createdAt: string;
+}
+
+export interface LibraryPostVersionReviewInterface {
+    id: string;
+    librarianId: string;
+    libraryPostVersionId: string;
+    decision: 'Accept' | 'Revise' | 'Reject';
+    review: string; // Review in markdown
+    updatedAt: string;
+    createdAt: string;
+}
+
+export interface LibraryPostVersionAnnotationInterface {
+    id: string;
+    libraryPostVersionId: string;
+    librarianId: string;
+    startOffset: number;
+    endOffset: number;
+    comment: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface LibraryPostVersionWithReviewsInterface extends LibraryPostVersionInterface {
+    reviews: LibraryPostVersionReviewInterface[];
+}
+
+export interface LibraryPostWithVersionsAndReviewsInterface extends LibraryPostInterface {
+    versions: LibraryPostVersionWithReviewsInterface[];
 }
 
 export interface LibraryNodeComprehensiveInterface extends LibraryNodeInterface {
     inboundRelationships: LibraryNodeRelationshipInterface[];
     outboundRelationships: LibraryNodeRelationshipInterface[];
     history: LibraryNodeHistoryInterface[];
+    postsWithVersionsAndReviews: LibraryPostWithVersionsAndReviewsInterface[];
 }
 
 export interface LibraryNodeRelationshipConciseInterface {
@@ -228,6 +280,14 @@ export interface LibraryNodeWithRelationshipsConciseInterface {
     title: LibraryNodeInterface['title'];
     inboundRelationships: LibraryNodeInboundRelationshipConciseInterface[];
     outboundRelationships: LibraryNodeOutboundRelationshipConciseInterface[];
+}
+
+export interface LibraryPostWithLatestVersionInterface extends LibraryPostInterface {
+    libraryPostVersion: LibraryPostVersionInterface;
+}
+
+export interface LibraryNodeWithLibraryPostWithLatestVersionInterface extends LibraryNodeInterface {
+    libraryPost: LibraryPostWithLatestVersionInterface;
 }
 
 export interface PaginationResponseInterface {
@@ -277,6 +337,19 @@ export interface LibraryApiInterface {
         response: {
             data: {
                 libraryNodes: LibraryNodeInterface[];
+                pagination: PaginationResponseInterface;
+            };
+        };
+    };
+    getLibraryNodesWithLibraryPostsWithLatestVersions: {
+        parameters: {
+            page: number;
+            itemsPerPage: number;
+            searchTerm?: string;
+        };
+        response: {
+            data: {
+                libraryNodes: LibraryNodeWithLibraryPostWithLatestVersionInterface[];
                 pagination: PaginationResponseInterface;
             };
         };

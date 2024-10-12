@@ -29,7 +29,7 @@ export async function generateMetadata(properties: PageInterface) {
     const serverSideProperties = await getServerSideProperties(properties);
 
     return {
-        title: serverSideProperties.data.title + ' • Library',
+        title: serverSideProperties.data.title + ' • Library • Phi',
     };
 }
 

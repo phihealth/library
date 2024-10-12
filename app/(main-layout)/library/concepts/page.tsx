@@ -1,7 +1,7 @@
 export const runtime = 'edge'; // Enable server-side rendering
 
 // Dependencies - Main Components
-import { LibraryPage } from '@project/source/pages/LibraryPage';
+import { LibraryNodesPage } from '@project/source/pages/LibraryNodesPage';
 
 // Dependencies - API
 import { libraryApiClient } from '@project/source/api/LibraryApiClient';
@@ -30,7 +30,7 @@ async function getServerSideProperties(properties: PageInterface) {
 // Next.js Metadata
 export async function generateMetadata() {
     return {
-        title: 'Library',
+        title: 'Concepts • Library • Phi',
     };
 }
 
@@ -40,7 +40,7 @@ export default async function Page(properties: PageInterface) {
     const serverSideProperties = await getServerSideProperties(properties);
 
     return (
-        <LibraryPage
+        <LibraryNodesPage
             libraryNodes={serverSideProperties.data.libraryNodes}
             itemsPerPage={serverSideProperties.data.pagination.itemsPerPage}
             page={serverSideProperties.data.pagination.page}

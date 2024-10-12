@@ -59,6 +59,17 @@ export class LibraryApiServer {
                 const { slug } = parameters as LibraryApiInterface['getLibraryNodeBySlug']['parameters'];
                 response.data = libraryDatabase.getLibraryNodeBySlug(slug, true);
             }
+            // getLibraryPosts
+            else if(request.nextUrl.pathname === '/api/getLibraryNodesWithLibraryPostsWithLatestVersions') {
+                console.log('parameters', parameters);
+                const { page, itemsPerPage, searchTerm } =
+                    parameters as LibraryApiInterface['getLibraryNodesWithLibraryPostsWithLatestVersions']['parameters'];
+                response.data = libraryDatabase.getLibraryNodesWithLibraryPostWithLatestVersionInterface(
+                    page,
+                    itemsPerPage,
+                    searchTerm,
+                );
+            }
             // improveLibrary
             else if(request.nextUrl.pathname === '/api/improveLibrary') {
                 response.data = await LibraryAgent.improveLibrary(libraryDatabase);

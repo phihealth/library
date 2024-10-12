@@ -3,6 +3,20 @@ import { PromptBuilder } from '@project/source/api/prompts/PromptBuilder';
 
 // Dependencies - API
 import { LibraryDatabase } from '@project/source/api/LibraryDatabase';
+import {
+    LibraryNodeInterface,
+    LibraryNodeProposalInterface,
+    LibraryNodeProposalReviewInterface,
+    LibraryNodeHistoryInterface,
+    LibraryNodeRelationshipInterface,
+    LibraryNodeRelationshipTypeInterface,
+    LibraryNodeComprehensiveInterface,
+    LibraryPostInterface,
+    LibraryPostHistoryInterface,
+    LibraryPostVersionInterface,
+    LibraryPostVersionReviewInterface,
+    LibraryPostVersionAnnotationInterface,
+} from '@project/source/api/LibraryApiInterfaces';
 
 // Dependencies - Utilities
 import { slug } from '@structure/source/utilities/String';
@@ -11,8 +25,8 @@ import { slug } from '@structure/source/utilities/String';
 export class LibraryAgent {
     // Define tasks with their associated weights
     static tasks = [
-        { name: 'proposeTitleChanges', method: LibraryAgent.proposeTitleChanges, weight: 1 },
-        { name: 'createArticleForNode', method: LibraryAgent.createArticleForNode, weight: 0 },
+        { name: 'proposeTitleChanges', method: LibraryAgent.proposeTitleChanges, weight: 0 },
+        { name: 'createPostForLibraryNode', method: LibraryAgent.createPostForLibraryNode, weight: 1 },
     ];
 
     static async improveLibrary(database: LibraryDatabase) {
@@ -31,7 +45,7 @@ export class LibraryAgent {
         }
     }
 
-    private static selectTaskBasedOnWeight() {
+    static selectTaskBasedOnWeight() {
         const totalWeight = this.tasks.reduce((sum, task) => sum + task.weight, 0);
         const randomValue = Math.random() * totalWeight;
         let cumulativeWeight = 0;
@@ -44,7 +58,7 @@ export class LibraryAgent {
         return null;
     }
 
-    private static async proposeTitleChanges(database: LibraryDatabase) {
+    static async proposeTitleChanges(database: LibraryDatabase) {
         // Existing code for proposing title changes
         // Step 1 - Get a random node
         const randomNode = database.getRandomLibraryNode();
@@ -94,70 +108,109 @@ export class LibraryAgent {
         }
     }
 
-    private static async createArticleForNode(database: LibraryDatabase) {
-        // Step 1 - Get a random node
-        const randomNode = database.getRandomLibraryNode();
+    static async createPostForLibraryNode(database: LibraryDatabase) {
+        // TODO: This will need to change as we scale up
+        let libraryNode = null;
+        let libraryPost = null;
+        while(!libraryPost) {
+            // Get a random node
+            libraryNode = database.getRandomLibraryNode();
+
+            // Check if there is already a post for the node
+            const possiblyExistingLibraryPost = database.getLibraryPostForLibraryNode(libraryNode.id);
+
+            // If there is no post for the node, create one
+            if(!possiblyExistingLibraryPost) {
+                // Create the library post
+                libraryPost = database.getOrCreateLibraryPostForLibraryNode(libraryNode.id);
+            }
+        }
+
+        // Bail if we don't have a random node and a post for that node
+        if(!libraryNode || !libraryPost) {
+            return;
+        }
+
+        // We now have a random node and a post for that node
         console.log('\n\n\n');
-        console.log(`\n=== Creating article for: "${randomNode.title}" ===\n`);
+        console.log(`\n=== Creating post for: "${libraryNode.title}" ===\n`);
 
-        // Step 2 - Initialize variables
-        let articleContent = '';
+        // Now we are ready to write the post
+
+        // Initialize variables
+        let articleObject = null;
         let iteration = 0;
-        let feedback: string[] = [];
+        let libraryPostVersionReviews: LibraryPostVersionReviewInterface[] = [];
+        const loopCount = 3;
 
-        const loopCount = 5;
-
-        // Step 3 - Loop x times
+        // Loop x times
         while(iteration < loopCount) {
             iteration++;
-            console.log(`\n--- Iteration ${iteration} ---\n`);
+            console.log(`\n--- Iteration ${iteration} for ${libraryNode.title} ---\n`);
 
             // Generate article content with feedback
-            articleContent = await this.getGeneratedArticle(randomNode, articleContent, feedback);
-            console.log(`Generated article for node: "${randomNode.title}"`);
-            console.log(randomNode.title, 'Article Content:');
-            console.log(articleContent);
+            let newArticleObject = await this.getGeneratedArticle(
+                libraryNode,
+                articleObject,
+                libraryPostVersionReviews,
+            );
+            console.log(`Generated article for node: "${libraryNode.title}"`);
+            console.log(libraryNode.title, 'Article Content:');
+            console.log(newArticleObject);
             console.log('------------------------------------');
 
-            if(!articleContent) {
-                console.error('Failed to generate article content.');
-                return;
+            if(!newArticleObject || !newArticleObject.content) {
+                continue;
             }
 
-            // Only review if not on the last iteration
+            articleObject = newArticleObject;
+
+            // Create the LibraryPostVersion
+            const libraryPostVersion = database.createLibraryPostVersion({
+                libraryPostId: libraryPost.id,
+                librarianId: 'System',
+                status: 'Draft',
+                title: articleObject.title,
+                subtitle: articleObject.subtitle,
+                content: articleObject.content,
+                description: articleObject.description,
+                notesForReviewers: articleObject.notesForReviewers,
+            });
+
+            // If we are not on the last iteration, it's time to go to review
             if(loopCount !== iteration) {
                 // Review the generated article
-                const reviewResult = await this.reviewGeneratedArticle(articleContent, randomNode.title);
-                console.log('\n\n\n');
-                console.log(`--- Iteration ${iteration} Feedback ---\n`);
-                reviewResult.feedbacks.forEach((feedback, index) => {
-                    console.log('\n\n');
-                    console.log(`- Reviewer ${index + 1} Feedback -`);
-                    console.log('\n\n');
-                    console.log(feedback);
-                    console.log('\n\n');
-                    console.log('------------');
-                });
-                console.log('------------------------------------');
+                const libraryPostVersionReview = await this.reviewLibraryPostVersionForLibraryNode(
+                    database,
+                    libraryNode,
+                    libraryPostVersion,
+                );
 
-                // Update feedbacks for the next iteration
-                feedback = reviewResult.feedbacks;
+                if(libraryPostVersionReview) {
+                    console.log('\n\n\n');
+                    console.log(`--- Iteration ${iteration} for ${libraryNode.title} Feedback ---\n`);
+                    console.log(libraryPostVersionReview);
+                    console.log('\n\n\n');
+
+                    // Update feedbacks for the next iteration
+                    libraryPostVersionReviews = [libraryPostVersionReview];
+                }
             }
         }
 
         // Step 4 - Accept the article in its current state
-        // database.updateLibraryNodeArticle(randomNode.title, articleContent);
-        // console.log(`Article saved for node: "${randomNode.title}"`);
+        // database.updateLibraryNodeArticle(randomLibraryNode.title, articleContent);
+        // console.log(`Article saved for node: "${randomLibraryNode.title}"`);
         console.log('\n=== Final Article Content ===\n');
-        console.log(articleContent);
+        console.log(articleObject);
     }
 
-    private static async getGeneratedArticle(
+    static async getGeneratedArticle(
         randomNode: any,
-        previousArticleContent?: string,
-        feedbackList?: string[],
+        articleObject?: ReturnType<typeof LibraryAgent.parseGeneratedArticle> | null,
+        libraryPostVersionReviews?: LibraryPostVersionReviewInterface[],
     ) {
-        const prompt = PromptBuilder.constructArticlePrompt(randomNode.title, previousArticleContent, feedbackList);
+        const prompt = PromptBuilder.constructArticlePrompt(randomNode.title, articleObject, libraryPostVersionReviews);
 
         // console.log('\n\n\n\n');
         // console.log('Prompt for article generation:');
@@ -165,52 +218,104 @@ export class LibraryAgent {
         // console.log('\n\n\n\n');
 
         const generatedText = await this.callDigitalIntelligenceWithRetry(prompt);
-
         if(!generatedText) {
             console.error('Failed to get a response for article generation.');
+            return null;
+        }
+
+        return LibraryAgent.parseGeneratedArticle(generatedText);
+    }
+
+    static parseGeneratedArticle(generatedText: string) {
+        const articleTitle = this.getTrimmedSegment(generatedText, 'ARTICLE_TITLE_START', 'ARTICLE_TITLE_END', true);
+        const articleSubtitle = this.getTrimmedSegment(
+            generatedText,
+            'ARTICLE_SUBTITLE_START',
+            'ARTICLE_SUBTITLE_END',
+            true,
+        );
+        const feedbackResponse = this.getTrimmedSegment(
+            generatedText,
+            'FEEDBACK_RESPONSE_START',
+            'FEEDBACK_RESPONSE_END',
+        );
+        const articleContent = this.getTrimmedSegment(generatedText, 'ARTICLE_CONTENT_START', 'ARTICLE_CONTENT_END');
+        const articleSummary = this.getTrimmedSegment(
+            generatedText,
+            'ARTICLE_SUMMARY_START',
+            'ARTICLE_SUMMARY_END',
+            true,
+        );
+
+        return {
+            title: articleTitle,
+            subtitle: articleSubtitle,
+            notesForReviewers: feedbackResponse,
+            content: articleContent,
+            description: articleSummary,
+        };
+    }
+
+    static getTrimmedSegment(
+        text: string,
+        startMarker: string,
+        endMarker: string,
+        removeMarkdown: boolean = false,
+    ): string {
+        const startIndex = text.indexOf(startMarker) + startMarker.length;
+        const endIndex = text.indexOf(endMarker);
+        if(startIndex < startMarker.length || endIndex === -1) {
             return '';
         }
+        let segment = text.substring(startIndex, endIndex).trim();
 
-        return generatedText;
-    }
+        if(removeMarkdown) {
+            // Remove all new lines
+            segment = segment.replace(/\n/g, ' ');
 
-    private static async reviewGeneratedArticle(
-        articleContent: string,
-        originalTitle: string,
-    ): Promise<{ isAccepted: boolean; feedbacks: string[] }> {
-        const reviewerResponses = [];
-        const feedbacks: string[] = [];
+            // Remove extra spaces
+            segment = segment.replace(/\s+/g, ' ');
 
-        for(let i = 0; i < 3; i++) {
-            const reviewerPrompt = PromptBuilder.constructArticleReviewPrompt(articleContent, originalTitle);
+            // Remove all markdown
+            segment = segment.replace(/[*_`]/g, '');
 
-            const response = await this.callDigitalIntelligenceWithRetry(reviewerPrompt);
-            reviewerResponses.push(response);
+            // Remove #
+            segment = segment.replace(/#/g, '');
+
+            segment = segment.trim();
         }
 
-        let acceptCount = 0;
-        reviewerResponses.forEach((response) => {
-            if(response) {
-                const [decisionLine, ...feedbackLines] = response.split('\n');
-                if(decisionLine) {
-                    const decision = decisionLine.trim().toLowerCase();
-
-                    const feedback = feedbackLines.join('\n').trim();
-                    if(feedback) {
-                        feedbacks.push(feedback);
-                    }
-
-                    if(decision.includes('accept')) {
-                        acceptCount++;
-                    }
-                }
-            }
-        });
-
-        return { isAccepted: acceptCount === 3, feedbacks };
+        return segment;
     }
 
-    private static async getProposedTitleChange(randomNode: any) {
+    static async reviewLibraryPostVersionForLibraryNode(
+        database: LibraryDatabase,
+        libraryNode: LibraryNodeInterface,
+        libraryPostVersion: LibraryPostVersionInterface,
+    ) {
+        // Get the prompt
+        const reviewerPrompt = PromptBuilder.constructArticleReviewPrompt(libraryPostVersion, libraryNode.title);
+        console.log('Reviewer Prompt:', reviewerPrompt);
+
+        // Get the review
+        const review = await this.callDigitalIntelligenceWithRetry(reviewerPrompt);
+        if(!review) {
+            console.error('Failed to get a response for article review.');
+            return null;
+        }
+
+        // Create the LibraryPostVersionReview
+        const libraryPostVersionReview = database.createLibraryPostVersionReview({
+            librarianId: 'System',
+            libraryPostVersionId: libraryPostVersion.id,
+            decision: 'Accept',
+            review: review,
+        });
+
+        return libraryPostVersionReview;
+    }
+
+    static async getProposedTitleChange(randomNode: any) {
         const prompt = PromptBuilder.constructInitialPrompt([randomNode.title]);
         const generatedText = await this.callDigitalIntelligenceWithRetry(prompt);
         // console.log('Generated Text:', generatedText);
@@ -235,7 +340,7 @@ export class LibraryAgent {
         return command;
     }
 
-    private static async reviewProposedChange(
+    static async reviewProposedChange(
         database: LibraryDatabase,
         commands: any[],
         originalTitle: string,
@@ -290,7 +395,7 @@ export class LibraryAgent {
         return acceptCount === reviewCount;
     }
 
-    private static applyChanges(database: LibraryDatabase, node: any, command: any) {
+    static applyChanges(database: LibraryDatabase, node: any, command: any) {
         // Node title update
         if(command.command === 'nodeTitleUpdate') {
             // Handle node title update
@@ -317,7 +422,7 @@ export class LibraryAgent {
         }
     }
 
-    private static async callDigitalIntelligenceWithRetry(prompt: string, retries = 3): Promise<string | null> {
+    static async callDigitalIntelligenceWithRetry(prompt: string, retries = 3): Promise<string | null> {
         const apiKey = process.env.OPENAI_API_KEY;
         // const url = 'http://localhost:1234/v1/chat/completions';
         const url = 'http://10.10.100.1:1234/v1/chat/completions';
@@ -360,14 +465,14 @@ export class LibraryAgent {
     }
 
     // Validate a single command
-    private static validateCommand(command: any): boolean {
+    static validateCommand(command: any): boolean {
         return (
             command && command.command && (command.command === 'nodeTitleUpdate' || command.command === 'nodeDelete')
         );
     }
 
     // Assumes a JSON object with a single command in the generated text
-    private static parseCommand(generatedText: string) {
+    static parseCommand(generatedText: string) {
         try {
             // Remove code block markers and any text before/after JSON
             const jsonStart = generatedText.indexOf('{');
@@ -399,7 +504,7 @@ export class LibraryAgent {
     }
 
     // Assumes a JSON array of commands in the generated text
-    private static parseCommands(generatedText: string) {
+    static parseCommands(generatedText: string) {
         try {
             // Remove code block markers and any text before/after JSON
             const jsonStart = generatedText.indexOf('[');
@@ -431,7 +536,7 @@ export class LibraryAgent {
         }
     }
 
-    private static delay(ms: number) {
+    static delay(ms: number) {
         return new Promise((resolve) => setTimeout(resolve, ms));
     }
 }

@@ -14,6 +14,7 @@ export class LibraryApiClient {
             headers: {
                 'Content-Type': 'application/json',
             },
+            cache: 'no-store',
             body: parameters ? JSON.stringify(parameters) : undefined,
         });
 

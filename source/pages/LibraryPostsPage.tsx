@@ -5,24 +5,27 @@ import React from 'react';
 import Link from 'next/link';
 
 // Dependencies - Main Components
-import { LibraryNodeInterface } from '@project/source/api/LibraryApiInterfaces';
+import {
+    LibraryNodeInterface,
+    LibraryNodeWithLibraryPostWithLatestVersionInterface,
+} from '@project/source/api/LibraryApiInterfaces';
 import { Pagination } from '@structure/source/common/navigation/Pagination';
 import { InputText } from '@structure/source/common/forms/InputText';
 
-// Component - LibraryPage
-export interface LibraryPageInterface {
-    libraryNodes: LibraryNodeInterface[];
+// Component - LibraryPostsPage
+export interface LibraryPostsPageInterface {
+    libraryNodes: LibraryNodeWithLibraryPostWithLatestVersionInterface[];
     itemsPerPage: number;
     page: number;
     pagesTotal: number;
     searchTerm: string;
 }
-export function LibraryPage(properties: LibraryPageInterface) {
+export function LibraryPostsPage(properties: LibraryPostsPageInterface) {
     // Render the component
     return (
         <div className="container pb-32 pt-8">
             <Link href="/">
-                <h1 className="inline text-3xl font-medium">Phi Library</h1>
+                <h1 className="inline text-3xl font-medium">Articles</h1>
             </Link>
 
             {/* Search */}
@@ -30,7 +33,7 @@ export function LibraryPage(properties: LibraryPageInterface) {
                 <InputText
                     id="searchTerm"
                     variant="search"
-                    placeholder="Search the library..."
+                    placeholder="Search articles..."
                     defaultValue={properties.searchTerm}
                     className="w-full"
                     // On enter key
@@ -38,23 +41,27 @@ export function LibraryPage(properties: LibraryPageInterface) {
                         if(event.key === 'Enter') {
                             // Redirect to the search page
                             window.location.href =
-                                '/library?searchTerm=' + encodeURIComponent(event.currentTarget.value);
+                                '/library/posts?searchTerm=' + encodeURIComponent(event.currentTarget.value);
                         }
                     }}
                 />
             </div>
 
-            {/* LibraryNodes */}
-            <div>
-                {properties.libraryNodes.map(function (libraryNode) {
-                    return (
-                        <div key={libraryNode.id} className="">
-                            <Link href={'/library/' + libraryNode.slug} className="primary text-lg">
-                                {libraryNode.title}{' '}
-                            </Link>
-                        </div>
-                    );
-                })}
+            {/* LibraryNodes with LibraryPosts */}
+            {/* <div className="whitespace-pre-wrap">{JSON.stringify(properties.libraryNodes, null, 4)}</div> */}
+
+            <div className="">
+                <div className="flex flex-col space-y-1.5 pb-1.5">
+                    {properties.libraryNodes.map(function (libraryNode) {
+                        return (
+                            <div key={libraryNode.id} className="">
+                                <Link href={'/library/' + libraryNode.slug} className="primary">
+                                    {libraryNode.libraryPost.libraryPostVersion.title} ({libraryNode.title})
+                                </Link>
+                            </div>
+                        );
+                    })}
+                </div>
                 <Pagination
                     className="mt-6"
                     page={properties.page}
@@ -69,4 +76,4 @@ export function LibraryPage(properties: LibraryPageInterface) {
 }
 
 // Export - Default
-export default LibraryPage;
+export default LibraryPostsPage;

@@ -6,7 +6,7 @@ import { LibraryBuilderPage } from '@project/source/pages/LibraryBuilderPage';
 // Next.js Metadata
 export async function generateMetadata() {
     return {
-        title: 'Library Builder',
+        title: 'Builder • Library • Phi',
     };
 }
 
