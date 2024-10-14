@@ -44,6 +44,16 @@ function GlobalStatistics(props: { contributors: ContributorType[] }) {
     const averageRequestTime = totalRequests > 0 ? (totalDuration / totalRequests).toFixed(1) : '0.0';
     const requestsPerMinute =
         totalRequests > 0 && totalDuration > 0 ? ((totalRequests / totalDuration) * 60).toFixed(1) : '0.0';
+    const requestsPerHour =
+        totalRequests > 0 && totalDuration > 0 ? ((totalRequests / totalDuration) * 3600).toFixed(1) : '0.0';
+    const requestsPer12Hours =
+        totalRequests > 0 && totalDuration > 0 ? ((totalRequests / totalDuration) * 43200).toFixed(1) : '0.0';
+    const requestsPerDay =
+        totalRequests > 0 && totalDuration > 0 ? ((totalRequests / totalDuration) * 86400).toFixed(1) : '0.0';
+    const requestsPerWeek =
+        totalRequests > 0 && totalDuration > 0 ? ((totalRequests / totalDuration) * 604800).toFixed(1) : '0.0';
+    const requestsPerMonth =
+        totalRequests > 0 && totalDuration > 0 ? ((totalRequests / totalDuration) * 2592000).toFixed(1) : '0.0';
 
     // Calculate percentiles
     const sortedDurations = [...totalRequestDurations].sort(function (a, b) {
@@ -62,6 +72,11 @@ function GlobalStatistics(props: { contributors: ContributorType[] }) {
             <p className="neutral mt-2 text-xs">Total Requests: {addCommas(totalRequests)}</p>
             <p className="neutral mt-2 text-xs">Average Request Time: {addCommas(averageRequestTime)}s</p>
             <p className="neutral mt-2 text-xs">Requests per Minute: {addCommas(requestsPerMinute)}</p>
+            <p className="neutral mt-2 text-xs">Requests per Hour: {addCommas(requestsPerHour)}</p>
+            <p className="neutral mt-2 text-xs">Requests per 12 Hours: {addCommas(requestsPer12Hours)}</p>
+            <p className="neutral mt-2 text-xs">Requests per Day: {addCommas(requestsPerDay)}</p>
+            <p className="neutral mt-2 text-xs">Requests per Week: {addCommas(requestsPerWeek)}</p>
+            <p className="neutral mt-2 text-xs">Requests per Month: {addCommas(requestsPerMonth)}</p>
             <p className="neutral mt-2 text-xs">p50 Request Time: {addCommas(p50RequestTime)}s</p>
             <p className="neutral mt-2 text-xs">p90 Request Time: {addCommas(p90RequestTime)}s</p>
             <p className="neutral mt-2 text-xs">p99 Request Time: {addCommas(p99RequestTime)}s</p>
@@ -217,7 +232,7 @@ function Contributor(props: {
                 items={[{ value: 'improveLibrary', content: 'Improve Library' }]}
                 defaultValue={selectedApiEndpoint}
                 onChange={function (value) {
-                    onUpdate({ selectedApiEndpoint: value });
+                    onUpdate({ selectedApiEndpoint: value as keyof LibraryApiInterface });
                 }}
             />
 

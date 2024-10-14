@@ -63,8 +63,8 @@ Do you accept this change? Reply with a JSON object. That conforms to this inter
 
 \`\`\`
 {
-    "decision": string;
     "reason": string;
+    "decision": string;
 }
 \`\`\`
 

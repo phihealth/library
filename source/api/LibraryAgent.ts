@@ -33,9 +33,6 @@ export class LibraryAgent {
     ];
 
     static async improveLibrary(database: LibraryDatabase, digitalIntelligenceHost: string) {
-        console.log('\n\n\n');
-        console.log('digitalIntelligenceHost', digitalIntelligenceHost);
-
         if(!digitalIntelligenceHost) {
             throw new Error('Digital Intelligence host is not defined.');
         }
@@ -451,7 +448,7 @@ export class LibraryAgent {
         // const url = 'http://localhost:1234/v1/chat/completions';
         // const url = 'http://10.10.100.1:1234/v1/chat/completions';
         const url = digitalIntelligenceHost + '/v1/chat/completions';
-        console.log('callDigitalIntelligenceWithRetry', url);
+        // console.log('callDigitalIntelligenceWithRetry', url);
 
         if(!digitalIntelligenceHost) {
             throw new Error('Digital Intelligence host is not defined.');
