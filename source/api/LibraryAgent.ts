@@ -1,3 +1,6 @@
+// Dependencies - Next.js
+import headers from 'next/headers';
+
 // Dependencies - Prompts
 import { PromptBuilder } from '@project/source/api/prompts/PromptBuilder';
 
@@ -25,16 +28,26 @@ import { slug, uniqueIdentifier } from '@structure/source/utilities/String';
 export class LibraryAgent {
     // Define tasks with their associated weights
     static tasks = [
-        { name: 'proposeTitleChanges', method: LibraryAgent.proposeTitleChanges, weight: 0 },
-        { name: 'createPostForLibraryNode', method: LibraryAgent.createPostForLibraryNode, weight: 1 },
+        { name: 'proposeTitleChanges', method: LibraryAgent.proposeTitleChanges, weight: 1 },
+        { name: 'createPostForLibraryNode', method: LibraryAgent.createPostForLibraryNode, weight: 0 },
     ];
 
-    static async improveLibrary(database: LibraryDatabase) {
+    static async improveLibrary(database: LibraryDatabase, digitalIntelligenceHost: string) {
+        console.log('\n\n\n');
+        console.log('digitalIntelligenceHost', digitalIntelligenceHost);
+
+        if(!digitalIntelligenceHost) {
+            throw new Error('Digital Intelligence host is not defined.');
+        }
+
         try {
             // Select a task based on weights
             const task = LibraryAgent.selectTaskBasedOnWeight();
             if(task) {
-                await task.method.call(LibraryAgent, database);
+                await task.method.call(LibraryAgent, database, digitalIntelligenceHost);
+
+                // Sleep for 3000 ms
+                // await LibraryAgent.delay(3000);
             }
             else {
                 console.error('No task selected.');
@@ -58,13 +71,12 @@ export class LibraryAgent {
         return null;
     }
 
-    static async proposeTitleChanges(database: LibraryDatabase) {
-        // Existing code for proposing title changes
+    static async proposeTitleChanges(database: LibraryDatabase, digitalIntelligenceHost: string) {
         // Step 1 - Get a random node
         const randomNode = database.getRandomLibraryNode();
 
         // Step 2 - Get the proposed changes (title update or delete)
-        const proposal = await this.getProposedTitleChange(randomNode);
+        const proposal = await this.getProposedTitleChange(randomNode, digitalIntelligenceHost);
         // console.log('proposal:', proposal);
 
         if(!proposal) {
@@ -97,6 +109,7 @@ export class LibraryAgent {
             randomNode.title,
             randomNode.id,
             libraryNodeProposal.id,
+            digitalIntelligenceHost,
         );
 
         // Update the library node proposal status
@@ -108,7 +121,7 @@ export class LibraryAgent {
         }
     }
 
-    static async createPostForLibraryNode(database: LibraryDatabase) {
+    static async createPostForLibraryNode(database: LibraryDatabase, digitalIntelligenceHost: string) {
         // TODO: This will need to change as we scale up
         let libraryNode = null;
         let libraryPost = null;
@@ -141,7 +154,7 @@ export class LibraryAgent {
         let articleObject = null;
         let iteration = 0;
         let libraryPostVersionReviews: LibraryPostVersionReviewInterface[] = [];
-        const loopCount = 3;
+        const loopCount = 4;
 
         // Loop x times
         while(iteration < loopCount) {
@@ -150,6 +163,7 @@ export class LibraryAgent {
 
             // Generate article content with feedback
             let newArticleObject = await this.getGeneratedArticle(
+                digitalIntelligenceHost,
                 libraryNode,
                 articleObject,
                 libraryPostVersionReviews,
@@ -182,6 +196,7 @@ export class LibraryAgent {
                 // Review the generated article
                 const libraryPostVersionReview = await this.reviewLibraryPostVersionForLibraryNode(
                     database,
+                    digitalIntelligenceHost,
                     libraryNode,
                     libraryPostVersion,
                 );
@@ -206,6 +221,7 @@ export class LibraryAgent {
     }
 
     static async getGeneratedArticle(
+        digitalIntelligenceHost: string,
         randomNode: any,
         articleObject?: ReturnType<typeof LibraryAgent.parseGeneratedArticle> | null,
         libraryPostVersionReviews?: LibraryPostVersionReviewInterface[],
@@ -217,7 +233,7 @@ export class LibraryAgent {
         // console.log(prompt);
         // console.log('\n\n\n\n');
 
-        const generatedText = await this.callDigitalIntelligenceWithRetry(prompt);
+        const generatedText = await this.callDigitalIntelligenceWithRetry(prompt, digitalIntelligenceHost);
         if(!generatedText) {
             console.error('Failed to get a response for article generation.');
             return null;
@@ -290,6 +306,7 @@ export class LibraryAgent {
 
     static async reviewLibraryPostVersionForLibraryNode(
         database: LibraryDatabase,
+        digitalIntelligenceHost: string,
         libraryNode: LibraryNodeInterface,
         libraryPostVersion: LibraryPostVersionInterface,
     ) {
@@ -298,7 +315,7 @@ export class LibraryAgent {
         console.log('Reviewer Prompt:', reviewerPrompt);
 
         // Get the review
-        const review = await this.callDigitalIntelligenceWithRetry(reviewerPrompt);
+        const review = await this.callDigitalIntelligenceWithRetry(reviewerPrompt, digitalIntelligenceHost);
         if(!review) {
             console.error('Failed to get a response for article review.');
             return null;
@@ -315,9 +332,11 @@ export class LibraryAgent {
         return libraryPostVersionReview;
     }
 
-    static async getProposedTitleChange(randomNode: any) {
+    static async getProposedTitleChange(randomNode: LibraryNodeInterface, digitalIntelligenceHost: string) {
         const prompt = PromptBuilder.constructInitialPrompt([randomNode.title]);
-        const generatedText = await this.callDigitalIntelligenceWithRetry(prompt);
+        const generatedText = await this.callDigitalIntelligenceWithRetry(prompt, digitalIntelligenceHost);
+        console.log('getProposedTitleChange', randomNode.title, digitalIntelligenceHost);
+
         // console.log('Generated Text:', generatedText);
 
         if(!generatedText) {
@@ -346,6 +365,7 @@ export class LibraryAgent {
         originalTitle: string,
         libraryNodeId: string,
         libraryNodeProposalId: string,
+        digitalIntelligenceHost: string,
     ) {
         // Store how many reviewers accepted the change
         let acceptCount = 0;
@@ -357,7 +377,7 @@ export class LibraryAgent {
             const reviewerPrompt = PromptBuilder.constructReviewerPrompt(commands, originalTitle);
 
             // Get the response
-            const response = await this.callDigitalIntelligenceWithRetry(reviewerPrompt);
+            const response = await this.callDigitalIntelligenceWithRetry(reviewerPrompt, digitalIntelligenceHost);
             // console.log('response:', response);
 
             if(response) {
@@ -422,10 +442,20 @@ export class LibraryAgent {
         }
     }
 
-    static async callDigitalIntelligenceWithRetry(prompt: string, retries = 3): Promise<string | null> {
+    static async callDigitalIntelligenceWithRetry(
+        prompt: string,
+        digitalIntelligenceHost: string,
+        retries = 3,
+    ): Promise<string | null> {
         const apiKey = process.env.OPENAI_API_KEY;
         // const url = 'http://localhost:1234/v1/chat/completions';
-        const url = 'http://10.10.100.1:1234/v1/chat/completions';
+        // const url = 'http://10.10.100.1:1234/v1/chat/completions';
+        const url = digitalIntelligenceHost + '/v1/chat/completions';
+        console.log('callDigitalIntelligenceWithRetry', url);
+
+        if(!digitalIntelligenceHost) {
+            throw new Error('Digital Intelligence host is not defined.');
+        }
 
         for(let attempt = 1; attempt <= retries; attempt++) {
             try {

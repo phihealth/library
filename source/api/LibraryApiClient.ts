@@ -6,6 +6,7 @@ export class LibraryApiClient {
     async request<K extends keyof LibraryApiInterface>(
         apiMethod: K,
         parameters?: LibraryApiInterface[K]['parameters'],
+        headers?: HeadersInit,
     ): Promise<LibraryApiInterface[K]['response']> {
         const url = `http://localhost:7878/api/${apiMethod}`;
 
@@ -13,6 +14,7 @@ export class LibraryApiClient {
             method: 'POST', // or 'GET' depending on your API method
             headers: {
                 'Content-Type': 'application/json',
+                ...headers,
             },
             cache: 'no-store',
             body: parameters ? JSON.stringify(parameters) : undefined,

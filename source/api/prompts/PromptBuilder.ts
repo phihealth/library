@@ -113,9 +113,10 @@ ${articleObject.content}
 
         const yourTask = articleObject && articleObject.content ? reviseArticleStatement : newArticleStatement;
 
-        return `You are an expert health writer contributing to our comprehensive health library. ${yourTask} The article should be clear, concise, and informative, suitable for a broad audience interested in health topics.
+        return `You are an expert health writer contributing to our comprehensive health library. ${yourTask} The article should be clear, concise, and informative.
 
-**Target Audience:** General public seeking reliable health information.
+**Target Audience:**
+Think deeply about the most likely persona of the reader interested in the content. This is who you are writing for. Empathize with their needs and knowledge level. Incorporate appropriate references pop culture. Tailor the content to be engaging and informative for them.
 
 ${feedbackSection}
 

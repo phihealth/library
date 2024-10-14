@@ -371,7 +371,9 @@ export interface LibraryApiInterface {
         };
     };
     improveLibrary: {
-        parameters: undefined;
+        parameters: {
+            digitalIntelligenceHost: string;
+        };
         response: {
             data: string;
         };

@@ -71,7 +71,8 @@ export class LibraryApiServer {
             }
             // improveLibrary
             else if(request.nextUrl.pathname === '/api/improveLibrary') {
-                response.data = await LibraryAgent.improveLibrary(libraryDatabase);
+                const { digitalIntelligenceHost } = parameters as LibraryApiInterface['improveLibrary']['parameters'];
+                response.data = await LibraryAgent.improveLibrary(libraryDatabase, digitalIntelligenceHost);
             }
             // addBannerImagesToLibraryPosts
             else if(request.nextUrl.pathname === '/api/addBannerImagesToLibraryPosts') {

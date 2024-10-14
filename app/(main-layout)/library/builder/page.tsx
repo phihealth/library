@@ -1,7 +1,7 @@
 export const runtime = 'edge'; // Enable server-side rendering
 
 // Dependencies - Main Components
-import { LibraryBuilderPage } from '@project/source/pages/LibraryBuilderPage';
+import { LibraryBuilderPage } from '@project/source/pages/LibraryBuilderPage1';
 
 // Next.js Metadata
 export async function generateMetadata() {
