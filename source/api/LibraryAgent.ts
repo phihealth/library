@@ -19,7 +19,7 @@ import {
 } from '@project/source/api/LibraryApiInterfaces';
 
 // Dependencies - Utilities
-import { slug } from '@structure/source/utilities/String';
+import { slug, uniqueIdentifier } from '@structure/source/utilities/String';
 
 // Class - LibraryAgent
 export class LibraryAgent {
@@ -538,6 +538,95 @@ export class LibraryAgent {
 
     static delay(ms: number) {
         return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
+    static async addBannerImagesToLibraryPosts(database: LibraryDatabase) {
+        const libraryPostWithoutBannerImage = database.getLibraryPostWithVersionsWithoutBannerImage();
+        // console.log('libraryNode', libraryNode);
+
+        if(!libraryPostWithoutBannerImage) {
+            console.log('No library post found.');
+            return;
+        }
+
+        const libraryPostVersion = libraryPostWithoutBannerImage.versions[0]!;
+        let libraryPostContentTruncated = libraryPostVersion.content.substring(0, 3000);
+        // Remove the last line if at 3000 characters limit
+        if(libraryPostContentTruncated.length === 3000) {
+            libraryPostContentTruncated = libraryPostContentTruncated.substring(
+                0,
+                libraryPostContentTruncated.lastIndexOf('\n'),
+            );
+        }
+
+        const prompt = `Please create a beautiful watercolor image for this article. Do not have any text in the image. Focus on a single element that represents the article. Keep it very simple and elegant.
+
+---
+${libraryPostVersion.title}
+${libraryPostVersion.subtitle}
+
+${libraryPostVersion.description}
+
+${libraryPostContentTruncated}
+---
+`;
+
+        console.log('PROMPT');
+        console.log(prompt);
+
+        const apiKey = process.env.OPENAI_API_KEY;
+        const url = 'https://api.openai.com/v1/images/generations';
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${apiKey}`,
+            },
+            body: JSON.stringify({
+                model: 'dall-e-3',
+                prompt: prompt,
+                n: 1,
+                // quality: 'standard',
+                quality: 'hd',
+                // size: '1024x1024',
+                size: '1792x1024',
+                response_format: 'b64_json',
+                // style: 'natural', // natural or vivid
+            }),
+        });
+
+        if(!response.ok) {
+            const error = await response.json();
+            console.error('LLM API error:', error);
+        }
+
+        const data = (await response.json()) as any;
+
+        console.log('data', data);
+
+        const image = data.data[0].b64_json;
+
+        // Save the image file
+        const buffer = Buffer.from(image, 'base64');
+        // const fileName = libraryPost.id + '-' + slug(libraryPostVersion.title) + '.png';
+        const fileName = slug(libraryPostVersion.title) + '-' + uniqueIdentifier(6) + '.png';
+        const filePath = `./public/images/articles/${fileName}`;
+        require('fs').writeFileSync(filePath, buffer);
+
+        // Create the LibraryPostAsset
+        const libraryPostAsset = database.createLibraryPostAsset({
+            libraryPostId: libraryPostWithoutBannerImage.id,
+            librarianId: 'System',
+            role: 'Banner',
+            type: 'Image',
+            format: 'png',
+            fileNameWithExtension: fileName,
+            title: '',
+            caption: '',
+            revisedPrompt: data.data[0].revised_prompt,
+        });
+
+        return libraryPostAsset;
     }
 }
 

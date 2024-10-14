@@ -61,7 +61,6 @@ export class LibraryApiServer {
             }
             // getLibraryPosts
             else if(request.nextUrl.pathname === '/api/getLibraryNodesWithLibraryPostsWithLatestVersions') {
-                console.log('parameters', parameters);
                 const { page, itemsPerPage, searchTerm } =
                     parameters as LibraryApiInterface['getLibraryNodesWithLibraryPostsWithLatestVersions']['parameters'];
                 response.data = libraryDatabase.getLibraryNodesWithLibraryPostWithLatestVersionInterface(
@@ -73,6 +72,10 @@ export class LibraryApiServer {
             // improveLibrary
             else if(request.nextUrl.pathname === '/api/improveLibrary') {
                 response.data = await LibraryAgent.improveLibrary(libraryDatabase);
+            }
+            // addBannerImagesToLibraryPosts
+            else if(request.nextUrl.pathname === '/api/addBannerImagesToLibraryPosts') {
+                response.data = await LibraryAgent.addBannerImagesToLibraryPosts(libraryDatabase);
             }
         }
         catch(error) {

@@ -15,8 +15,8 @@ export function MainLayout(properties: MainLayoutInterface) {
         <>
             {/* Navigation */}
             <div className="sticky top-0 z-20 border-b bg-light bg-opacity-75 backdrop-blur-3xl transition-colors dark:border-dark-4 dark:bg-dark-1">
-                <div className="flex items-center justify-center p-4">
-                    <ul className="flex space-x-phi text-[15px]">
+                <div className="flex items-center justify-center p-2">
+                    <ul className="flex items-center space-x-phi text-[15px]">
                         <li>
                             <Link href="/">Home</Link>
                         </li>
@@ -35,6 +35,9 @@ export function MainLayout(properties: MainLayoutInterface) {
                         <li>
                             <Link href="/library/post">Post</Link>
                         </li>
+                        <li className="">
+                            <ThemeToggle />
+                        </li>
                     </ul>
                 </div>
             </div>
@@ -42,9 +45,7 @@ export function MainLayout(properties: MainLayoutInterface) {
             <div className="relative w-full overflow-x-clip">{properties.children}</div>
 
             {/* Footer */}
-            <div className="flex justify-center">
-                <ThemeToggle className="" />
-            </div>
+            {/* <div className="flex justify-center"></div> */}
         </>
     );
 }

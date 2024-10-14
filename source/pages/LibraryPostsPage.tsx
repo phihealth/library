@@ -41,7 +41,7 @@ export function LibraryPostsPage(properties: LibraryPostsPageInterface) {
                         if(event.key === 'Enter') {
                             // Redirect to the search page
                             window.location.href =
-                                '/library/posts?searchTerm=' + encodeURIComponent(event.currentTarget.value);
+                                '/library/articles?searchTerm=' + encodeURIComponent(event.currentTarget.value);
                         }
                     }}
                 />
@@ -51,12 +51,15 @@ export function LibraryPostsPage(properties: LibraryPostsPageInterface) {
             {/* <div className="whitespace-pre-wrap">{JSON.stringify(properties.libraryNodes, null, 4)}</div> */}
 
             <div className="">
-                <div className="flex flex-col space-y-1.5 pb-1.5">
+                <div className="flex flex-col space-y-8 pb-1.5">
                     {properties.libraryNodes.map(function (libraryNode) {
                         return (
                             <div key={libraryNode.id} className="">
+                                <Link href={'/library/articles/' + libraryNode.slug} className="primary">
+                                    {libraryNode.libraryPost.libraryPostVersion.title}
+                                </Link>{' '}
                                 <Link href={'/library/' + libraryNode.slug} className="primary">
-                                    {libraryNode.libraryPost.libraryPostVersion.title} ({libraryNode.title})
+                                    ({libraryNode.title})
                                 </Link>
                             </div>
                         );

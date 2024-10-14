@@ -25,10 +25,10 @@ async function getServerSideProperties(properties: PageInterface) {
             searchTerm: properties.searchParams.searchTerm,
         },
     );
-    console.log(
-        'getLibraryNodesWithLibraryPostsWithLatestVersionsResponse',
-        getLibraryNodesWithLibraryPostsWithLatestVersionsResponse,
-    );
+    // console.log(
+    //     'getLibraryNodesWithLibraryPostsWithLatestVersionsResponse',
+    //     getLibraryNodesWithLibraryPostsWithLatestVersionsResponse,
+    // );
 
     return getLibraryNodesWithLibraryPostsWithLatestVersionsResponse;
 }

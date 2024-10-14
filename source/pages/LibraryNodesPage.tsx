@@ -38,7 +38,7 @@ export function LibraryNodesPage(properties: LibraryNodesPageInterface) {
                         if(event.key === 'Enter') {
                             // Redirect to the search page
                             window.location.href =
-                                '/library?searchTerm=' + encodeURIComponent(event.currentTarget.value);
+                                '/library/concepts?searchTerm=' + encodeURIComponent(event.currentTarget.value);
                         }
                     }}
                 />

@@ -57,7 +57,8 @@ export function LibraryBuilderPage() {
             setElapsedTime(((Date.now() - startTime) / 1000).toFixed(1) + 's');
         }, 1);
 
-        const response = await libraryApiClient.request('improveLibrary');
+        const response = await libraryApiClient.request('addBannerImagesToLibraryPosts');
+        // const response = await libraryApiClient.request('improveLibrary');
         setLastCommandOutput(JSON.stringify(response, null, 4));
 
         // Stop timer
@@ -164,6 +165,21 @@ export function LibraryBuilderPage() {
                             }}
                         >
                             Improve Library
+                        </Button>
+
+                        {/* Add Banner Images to Library Posts */}
+                        <Button
+                            onClick={async function () {
+                                setLastCommandOutput(
+                                    JSON.stringify(
+                                        await libraryApiClient.request('addBannerImagesToLibraryPosts'),
+                                        null,
+                                        4,
+                                    ),
+                                );
+                            }}
+                        >
+                            Add Banner Images
                         </Button>
                     </div>
                 </div>

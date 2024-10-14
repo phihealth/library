@@ -252,15 +252,31 @@ export interface LibraryPostVersionWithReviewsInterface extends LibraryPostVersi
     reviews: LibraryPostVersionReviewInterface[];
 }
 
-export interface LibraryPostWithVersionsAndReviewsInterface extends LibraryPostInterface {
+export interface LibraryPostWithAssetsAndVersionsAndReviewsInterface extends LibraryPostInterface {
+    assets: LibraryPostAssetInterface[];
     versions: LibraryPostVersionWithReviewsInterface[];
+}
+
+export interface LibraryPostAssetInterface {
+    id: string;
+    libraryPostId: string;
+    librarianId: string;
+    role: string;
+    type: string;
+    format: string;
+    fileNameWithExtension: string;
+    title?: string;
+    caption?: string;
+    revisedPrompt?: string;
+    updatedAt?: string;
+    createdAt: string;
 }
 
 export interface LibraryNodeComprehensiveInterface extends LibraryNodeInterface {
     inboundRelationships: LibraryNodeRelationshipInterface[];
     outboundRelationships: LibraryNodeRelationshipInterface[];
     history: LibraryNodeHistoryInterface[];
-    postsWithVersionsAndReviews: LibraryPostWithVersionsAndReviewsInterface[];
+    postsWithAssetsAndVersionsAndReviews: LibraryPostWithAssetsAndVersionsAndReviewsInterface[];
 }
 
 export interface LibraryNodeRelationshipConciseInterface {
@@ -355,6 +371,12 @@ export interface LibraryApiInterface {
         };
     };
     improveLibrary: {
+        parameters: undefined;
+        response: {
+            data: string;
+        };
+    };
+    addBannerImagesToLibraryPosts: {
         parameters: undefined;
         response: {
             data: string;

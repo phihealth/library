@@ -16,7 +16,9 @@ import {
     LibraryPostVersionReviewInterface,
     LibraryPostVersionAnnotationInterface,
     LibraryPostVersionWithReviewsInterface,
-    LibraryPostWithVersionsAndReviewsInterface,
+    LibraryPostWithAssetsAndVersionsAndReviewsInterface,
+    LibraryPostAssetInterface,
+    LibraryNodeWithLibraryPostWithLatestVersionInterface,
 } from '@project/source/api/LibraryApiInterfaces';
 
 // Dependencies - Utilities
@@ -359,16 +361,30 @@ export class LibraryDatabase {
         const proposals = this.getLibraryNodeProposals(libraryNode.id);
 
         // Get the library posts with versions and reviews
-        const postsWithVersionsAndReviews = this.getLibraryPostsWithVersionsAndReviewsForLibraryNode(libraryNode.id);
+        const postsWithVersionsAndReviews = this.getLibraryPostsWithAssetsAndVersionsAndReviewsForLibraryNode(
+            libraryNode.id,
+        );
 
         return {
             ...libraryNode,
-            inboundRelationships,
-            outboundRelationships,
+            inboundRelationships: inboundRelationships,
+            outboundRelationships: outboundRelationships,
             history: history,
             proposals: proposals,
-            postsWithVersionsAndReviews,
+            postsWithAssetsAndVersionsAndReviews: postsWithVersionsAndReviews,
         } as LibraryNodeComprehensiveInterface;
+    }
+
+    getLibraryNodeById(libraryNodeId: string, comprehensive: boolean = false) {
+        let libraryNode = this.database
+            .prepare('SELECT * FROM LibraryNode WHERE id = @id')
+            .get({ id: libraryNodeId }) as LibraryNodeInterface;
+
+        if(comprehensive) {
+            libraryNode = this.getLibraryNodeComprehensive(libraryNode);
+        }
+
+        return libraryNode;
     }
 
     getLibraryNodeByTitle(title: string, comprehensive: boolean = false) {
@@ -387,6 +403,7 @@ export class LibraryDatabase {
         let libraryNode = this.database
             .prepare('SELECT * FROM LibraryNode WHERE slug = @slug')
             .get({ slug }) as LibraryNodeInterface;
+        // console.log('libraryNode', libraryNode);
 
         if(comprehensive) {
             libraryNode = this.getLibraryNodeComprehensive(libraryNode);
@@ -712,11 +729,14 @@ export class LibraryDatabase {
         return this.getLibraryPostVersionReview(libraryPostVersionReviewId);
     }
 
-    getLibraryPostsWithVersionsAndReviewsForLibraryNode(
-        libraryNodeId: LibraryPostWithVersionsAndReviewsInterface['libraryNodeId'],
+    getLibraryPostsWithAssetsAndVersionsAndReviewsForLibraryNode(
+        libraryNodeId: LibraryPostWithAssetsAndVersionsAndReviewsInterface['libraryNodeId'],
     ) {
         // Get the LibraryPost
         const libraryPost = this.getLibraryPostForLibraryNode(libraryNodeId);
+        if(!libraryPost) {
+            return [];
+        }
 
         // Get the LibraryPostVersions
         const libraryPostVersions = this.database
@@ -732,6 +752,11 @@ export class LibraryDatabase {
             )
             .all() as LibraryPostVersionReviewInterface[];
 
+        // Get the LibraryPostAssets
+        const libraryPostAssets = this.database
+            .prepare('SELECT * FROM LibraryPostAsset WHERE libraryPostId = @libraryPostId')
+            .all({ libraryPostId: libraryPost.id }) as LibraryPostAssetInterface[];
+
         // Map reviews to their corresponding versions
         const versionsWithReviews = libraryPostVersions.map((version) => {
             const reviews = libraryPostVersionReviews.filter((review) => review.libraryPostVersionId === version.id);
@@ -745,126 +770,150 @@ export class LibraryDatabase {
             {
                 ...libraryPost,
                 versions: versionsWithReviews,
+                assets: libraryPostAssets,
             },
-        ] as LibraryPostWithVersionsAndReviewsInterface[];
+        ] as LibraryPostWithAssetsAndVersionsAndReviewsInterface[];
     }
 
     getLibraryNodesWithLibraryPostWithLatestVersionInterface(
         page: number = 1,
         itemsPerPage: number = 20,
         searchTerm?: string | null,
+        orderBy?: 'title' | 'createdAt' | 'updatedAt' | 'random',
     ): LibraryApiInterface['getLibraryNodesWithLibraryPostsWithLatestVersions']['response']['data'] {
         // Calculate the offset
         const offset = (page - 1) * itemsPerPage;
 
-        // Base queries
-        let libraryPostsWithLatestVersionQuery = `
-            SELECT lp.*, lpv.id as versionId, lpv.librarianId as versionLibrarianId, lpv.title as versionTitle, lpv.subtitle as versionSubtitle, lpv.content as versionContent, lpv.description as versionDescription, lpv.notesForReviewers as versionNotesForReviewers, lpv.status as versionStatus, lpv.updatedAt as uersionUpdatedAt, lpv.createdAt as versionCreatedAt
-            FROM LibraryPost lp
-            JOIN (
-                SELECT libraryPostId, MAX(createdAt) as maxCreatedAt
-                FROM LibraryPostVersion
-                GROUP BY libraryPostId
-            ) latestVersion ON lp.id = latestVersion.libraryPostId
-            JOIN LibraryPostVersion lpv ON lpv.libraryPostId = lp.id AND lpv.createdAt = latestVersion.maxCreatedAt
-        `;
+        const libraryPostIds = this.database
+            .prepare(
+                `
+                SELECT lp.id, lp.libraryNodeId
+                FROM LibraryPost AS lp
+                WHERE lp.id IN (
+                    -- Posts that have versions
+                    SELECT DISTINCT libraryPostId
+                    FROM LibraryPostVersion
+                )
+                AND lp.id IN (
+                    -- Include posts that have assets
+                    SELECT DISTINCT libraryPostId
+                    FROM LibraryPostAsset
+                )
+            `,
+            )
+            .all() as { id: string; libraryNodeId: string }[];
 
-        // Count query where there is a version for the post
-        let libraryPostsWithAVersionCountQuery = `
-            SELECT COUNT(*) as total
-            FROM LibraryPost lp
-            JOIN LibraryPostVersion lpv ON lpv.libraryPostId = lp.id
-        `;
-
-        // If there is a searchTerm, add the WHERE clause
-        if(searchTerm) {
-            libraryPostsWithLatestVersionQuery += ` WHERE lpv.content LIKE @searchTerm`;
-            libraryPostsWithAVersionCountQuery += ` WHERE lpv.content LIKE @searchTerm`;
-        }
-
-        // Add ORDER BY, LIMIT, and OFFSET clauses for pagination
-        libraryPostsWithLatestVersionQuery += `
-            ORDER BY lp.createdAt DESC
-            LIMIT @itemsPerPage OFFSET @offset
-        `;
-
-        interface LibraryPostWithLatestVersionSqlQueryInterface extends LibraryPostInterface {
-            versionId: LibraryPostVersionInterface['id'];
-            versionLibrarianId: LibraryPostVersionInterface['librarianId'];
-            versionTitle: LibraryPostVersionInterface['title'];
-            versionSubtitle: LibraryPostVersionInterface['subtitle'];
-            versionContent: LibraryPostVersionInterface['content'];
-            versionDescription: LibraryPostVersionInterface['description'];
-            versionNotesForReviewers: LibraryPostVersionInterface['notesForReviewers'];
-            versionStatus: LibraryPostVersionInterface['status'];
-            versionUpdatedAt: LibraryPostVersionInterface['updatedAt'];
-            versionCreatedAt: LibraryPostVersionInterface['createdAt'];
-        }
-
-        // Get the LibraryPosts matching the search criteria
-        const libraryPostsWithLatestVersion = this.database.prepare(libraryPostsWithLatestVersionQuery).all({
-            itemsPerPage,
-            offset,
-            searchTerm: searchTerm ? `%${searchTerm}%` : undefined,
-        }) as LibraryPostWithLatestVersionSqlQueryInterface[];
-
-        // Get the total count for pagination
-        const libraryPostsWithLatestVersionCount = this.database.prepare(libraryPostsWithAVersionCountQuery).get({
-            searchTerm: searchTerm ? `%${searchTerm}%` : undefined,
-        }) as { total: number };
-
-        // Calculate the total number of pages
-        const pagesTotal = Math.ceil(libraryPostsWithLatestVersionCount.total / itemsPerPage);
-
-        // Extract the IDs of the retrieved LibraryPosts
-        const libraryNodeIds = libraryPostsWithLatestVersion.map((lp) => lp.libraryNodeId);
-
-        // Retrieve all LibraryNodes for the retrieved LibraryPosts
-        const libraryNodesQuery = `
-            SELECT *
-            FROM LibraryNode
-            WHERE id IN (${libraryNodeIds.map(() => '?').join(',')})
-        `;
-        const libraryNodes = this.database.prepare(libraryNodesQuery).all(...libraryNodeIds) as LibraryNodeInterface[];
-        // console.log('libraryNodes', libraryNodes);
-
-        // Map library nodes by libraryPostId
-        const libraryNodesWithLibraryPostsWithLatestVersions = libraryNodes.map((libraryNode) => {
-            const libraryPostWithLatestVersion = libraryPostsWithLatestVersion.find(
-                (libraryPost) => libraryPost.libraryNodeId === libraryNode.id,
-            )!;
+        // Returns the posts all decked out
+        const libraryNodesWithLibraryPostsWithLatestVersions = libraryPostIds.map((libraryPost) => {
+            const libraryNode = this.getLibraryNodeById(
+                libraryPost.libraryNodeId,
+                true,
+            ) as LibraryNodeComprehensiveInterface;
             return {
                 ...libraryNode,
                 libraryPost: {
-                    ...libraryPostWithLatestVersion,
+                    ...libraryNode.postsWithAssetsAndVersionsAndReviews[0]!,
                     libraryPostVersion: {
-                        id: libraryPostWithLatestVersion.versionId,
-                        libraryPostId: libraryPostWithLatestVersion.id,
-                        librarianId: libraryPostWithLatestVersion.versionLibrarianId,
-                        title: libraryPostWithLatestVersion.versionTitle,
-                        subtitle: libraryPostWithLatestVersion.versionSubtitle,
-                        content: libraryPostWithLatestVersion.versionContent,
-                        description: libraryPostWithLatestVersion.versionDescription,
-                        notesForReviewers: libraryPostWithLatestVersion.versionNotesForReviewers,
-                        status: libraryPostWithLatestVersion.versionStatus,
-                        updatedAt: libraryPostWithLatestVersion.versionUpdatedAt,
-                        createdAt: libraryPostWithLatestVersion.versionCreatedAt,
+                        ...libraryNode.postsWithAssetsAndVersionsAndReviews[0]!.versions[0]!,
                     },
                 },
-            };
+            } satisfies LibraryNodeWithLibraryPostWithLatestVersionInterface;
         });
-
-        // getLibraryNodesWithLibraryPostsWithLatestVersionsInterface
 
         return {
             libraryNodes: libraryNodesWithLibraryPostsWithLatestVersions,
             pagination: {
                 itemsPerPage: itemsPerPage,
-                itemsTotal: libraryPostsWithLatestVersionCount.total || 0,
+                itemsTotal: libraryNodesWithLibraryPostsWithLatestVersions.length || 0,
                 page: page || 1,
-                pagesTotal: pagesTotal || 0,
+                pagesTotal: 1 || 0,
             },
         };
+    }
+
+    getLibraryPostWithVersionsWithoutBannerImage() {
+        // Get a LibraryPost ID that does not have any assets
+        const libraryPostId = this.database
+            .prepare(
+                `
+                SELECT lp.id, lp.libraryNodeId
+                FROM LibraryPost AS lp
+                WHERE lp.id IN (
+                    -- Posts that have versions
+                    SELECT DISTINCT libraryPostId
+                    FROM LibraryPostVersion
+                )
+                AND lp.id NOT IN (
+                    -- Exclude posts that have assets
+                    SELECT DISTINCT libraryPostId
+                    FROM LibraryPostAsset
+                ) ORDER BY RANDOM() LIMIT 1
+            `,
+            )
+            .get() as { id: string; libraryNodeId: string };
+        // console.log('libraryPostId', libraryPostId);
+
+        // Get the LibraryPosts with versions and reviews for the LibraryNode
+        const libraryPosts = this.getLibraryPostsWithAssetsAndVersionsAndReviewsForLibraryNode(
+            libraryPostId.libraryNodeId,
+        );
+        if(!libraryPosts) {
+            return;
+        }
+
+        const libraryPost = libraryPosts[0];
+
+        return libraryPost;
+    }
+
+    getLibraryPostAsset(libraryPostAssetId: LibraryPostAssetInterface['id']) {
+        return this.database
+            .prepare('SELECT * FROM LibraryPostAsset WHERE id = @id')
+            .get({ id: libraryPostAssetId }) as LibraryPostAssetInterface;
+    }
+
+    getLibraryPostAssetsForLibraryPost(libraryPostId: LibraryPostAssetInterface['libraryPostId']) {
+        return this.database
+            .prepare('SELECT * FROM LibraryPostAsset WHERE libraryPostId = @libraryPostId')
+            .all({ libraryPostId }) as LibraryPostAssetInterface[];
+    }
+
+    createLibraryPostAsset(libraryPostAssetProperties: {
+        libraryPostId: LibraryPostAssetInterface['libraryPostId'];
+        librarianId: LibraryPostAssetInterface['librarianId'];
+        role: LibraryPostAssetInterface['role'];
+        type: LibraryPostAssetInterface['type'];
+        format: LibraryPostAssetInterface['format'];
+        fileNameWithExtension: LibraryPostAssetInterface['fileNameWithExtension'];
+        title: LibraryPostAssetInterface['title'];
+        caption?: LibraryPostAssetInterface['caption'];
+        revisedPrompt?: LibraryPostAssetInterface['revisedPrompt'];
+    }) {
+        // Insert the LibraryPostAsset
+        const libraryPostAssetId = uuid();
+        this.database
+            .prepare(
+                `INSERT INTO LibraryPostAsset (
+                    id, libraryPostId, librarianId, role, type, format, fileNameWithExtension, title, caption, revisedPrompt, createdAt
+                ) VALUES (
+                    @id, @libraryPostId, @librarianId, @role, @type, @format, @fileNameWithExtension, @title, @caption, @revisedPrompt, @createdAt)`,
+            )
+            .run({
+                id: libraryPostAssetId,
+                libraryPostId: libraryPostAssetProperties.libraryPostId,
+                librarianId: libraryPostAssetProperties.librarianId,
+                role: libraryPostAssetProperties.role,
+                type: libraryPostAssetProperties.type,
+                format: libraryPostAssetProperties.format,
+                fileNameWithExtension: libraryPostAssetProperties.fileNameWithExtension,
+                title: libraryPostAssetProperties.title,
+                caption: libraryPostAssetProperties.caption,
+                revisedPrompt: libraryPostAssetProperties.revisedPrompt,
+                createdAt: this.getMySqlDateTimeInUtc(),
+            });
+
+        // Get the new LibraryPostAsset
+        return this.getLibraryPostAsset(libraryPostAssetId);
     }
 }
 

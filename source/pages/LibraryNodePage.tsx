@@ -19,68 +19,10 @@ export interface LibraryNodePageInterface {
     libraryNode: LibraryNodeComprehensiveInterface;
 }
 export function LibraryNodePage(properties: LibraryNodePageInterface) {
-    const [activeTab, setActiveTab] = React.useState({});
-
-    const handleTabClick = (postId, versionId) => {
-        setActiveTab((prevState) => ({
-            ...prevState,
-            [postId]: versionId,
-        }));
-    };
-
     // Render the component
     return (
         <div className="container pb-32 pt-8">
             <h1 className="mb-8 text-3xl font-medium">{properties.libraryNode.title}</h1>
-
-            <div className="mt-6">
-                <h2 className="text-lg">Posts</h2>
-                {properties.libraryNode.postsWithVersionsAndReviews.map((libraryPostWithVersionsAndReviews) => (
-                    <div key={libraryPostWithVersionsAndReviews.id} className="">
-                        <div className="tab-list">
-                            {libraryPostWithVersionsAndReviews.versions.map(
-                                (libraryPostVersion, libraryPostVersionIndex) => (
-                                    <Button
-                                        key={libraryPostVersion.id}
-                                        variant="ghost"
-                                        className={`${
-                                            activeTab[libraryPostWithVersionsAndReviews.id] === libraryPostVersion.id
-                                                ? 'active'
-                                                : ''
-                                        }`}
-                                        onClick={() =>
-                                            handleTabClick(libraryPostWithVersionsAndReviews.id, libraryPostVersion.id)
-                                        }
-                                    >
-                                        {libraryPostWithVersionsAndReviews.versions.length - libraryPostVersionIndex}
-                                    </Button>
-                                ),
-                            )}
-                        </div>
-
-                        {libraryPostWithVersionsAndReviews.versions.map((libraryPostVersion) => (
-                            <div
-                                key={libraryPostVersion.id}
-                                className={`rounded border p-4 ${
-                                    activeTab[libraryPostWithVersionsAndReviews.id] === libraryPostVersion.id
-                                        ? 'active'
-                                        : 'hidden'
-                                }`}
-                            >
-                                <div className="neutral text-xs">
-                                    {libraryPostVersion.updatedAt} (
-                                    {timeAgo(new Date(libraryPostVersion.createdAt.replace(' ', 'T') + 'Z').getTime())})
-                                </div>
-                                <Markdown>
-                                    {`## ${libraryPostVersion.title}\n\n*${libraryPostVersion.subtitle}*\n\n${libraryPostVersion.content}`}
-                                </Markdown>
-                            </div>
-                        ))}
-                    </div>
-                ))}
-            </div>
-
-            <hr className="my-6" />
 
             {/* LibraryNode */}
             <div className="flex flex-col space-y-4">
